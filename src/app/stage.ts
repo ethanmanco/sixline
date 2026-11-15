@@ -78,6 +78,8 @@ export class Stage {
           <span class="legend__item"><i class="legend__dot"></i><span data-legend-note>Scale note</span></span>
           <span class="legend__item" data-legend-shift><i class="legend__dot legend__dot--shift"></i>Hand shifts one fret</span>
           <span class="legend__item" data-legend-muted hidden><i class="legend__x">×</i>Don't play this string</span>
+          <span class="legend__item" data-legend-target hidden><i class="legend__dot legend__dot--target"></i>Note of the current chord</span>
+          <span class="legend__item" data-legend-outside hidden><i class="legend__dot legend__dot--outside"></i>Chord note outside this scale</span>
           <span class="legend__hint">Tap any fret to hear it. Arrow keys move, Enter plays.</span>
         </p>
       </div>`;
@@ -179,6 +181,12 @@ export class Stage {
     if (rect.top >= top && rect.bottom <= window.innerHeight) return;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     window.scrollBy({ top: rect.top - top - 8, behavior: reduce ? 'auto' : 'smooth' });
+  }
+
+  /** Shows or hides the chord-tone legend entries (Jam). */
+  setTargetLegend(on: boolean): void {
+    this.el.querySelector<HTMLElement>('[data-legend-target]')!.hidden = !on;
+    this.el.querySelector<HTMLElement>('[data-legend-outside]')!.hidden = !on;
   }
 
   /** What the Play button says when idle, e.g. "Hear scale" in Jam. */

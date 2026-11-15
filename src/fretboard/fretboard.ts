@@ -1,5 +1,6 @@
 import type { FretNote, FretPos, LabelMode, Shape, StringIndex } from '../core/types';
 import { MAX_FRET, STRINGS, STRING_NAMES, midiAt } from '../theory/guitar';
+import { noteChroma } from '../theory/spelling';
 
 export interface FretboardOptions {
   /** Called when a position is tapped, clicked, or activated from the keyboard. */
@@ -35,6 +36,8 @@ export class Fretboard {
   private visual = new Map<string, FretPos>();
   private sounding: HTMLElement[] = [];
   private barreEls: HTMLElement[] = [];
+  /** Chord tones to ring, as pitch classes (0 to 11), with names for notes outside the shape. */
+  private targets: { chromas: Set<number>; names: Map<number, string> } | null = null;
   private opts: FretboardOptions;
 
   constructor(opts: FretboardOptions = {}) {
@@ -71,6 +74,16 @@ export class Fretboard {
       this.setFocus({ string: shape.notes[0].string, fret: shape.notes[0].fret }, false);
     }
     this.buildBarres();
+    this.paint();
+  }
+
+  /**
+   * Rings the notes of a chord on top of the current shape. Chord tones that
+   * the shape does not contain show as hollow dots near the shape, so you can
+   * see the notes the scale is missing. Pass null to clear.
+   */
+  setTargets(notes: { chroma: number; name: string }[] | null): void {
+    this.targets = notes ? { chromas: new Set(notes.map((n) => n.chroma)), names: new Map(notes.map((n) => [n.chroma, n.name])) } : null;
     this.paint();
   }
 
@@ -259,6 +272,11 @@ export class Fretboard {
 
   /** Updates dots, labels, and accessible names. */
   private paint(): void {
+    // Hollow "outside" dots only show near the shape: within its fret span, one fret either side.
+    const frets = this.shape?.notes.map((n) => n.fret) ?? [];
+    const span = frets.length ? [Math.min(...frets) - 1, Math.max(...frets) + 1] : [0, MAX_FRET];
+    // "Outside" means outside the scale itself, not just outside this position.
+    const scaleChromas = new Set((this.shape?.info.noteNames ?? []).map((n) => noteChroma(n)));
     for (const cell of this.cells.values()) {
       const pos = this.posOf(cell);
       const idx = this.noteAt.get(key(pos.string, pos.fret));
@@ -271,10 +289,16 @@ export class Fretboard {
       cell.classList.toggle('has-note', !!note);
       cell.classList.toggle('is-root', !!note?.isRoot);
       cell.classList.toggle('is-shift', !!note?.shift);
+      const chroma = ((midi % 12) + 12) % 12;
+      const isTarget = !!this.targets?.chromas.has(chroma);
+      const outside = isTarget && !note && !muted && !scaleChromas.has(chroma) && pos.fret >= span[0] && pos.fret <= span[1];
+      cell.classList.toggle('is-target', isTarget && !!note);
+      cell.classList.toggle('is-outside', outside);
       const label = cell.querySelector<HTMLElement>('.fb__label')!;
-      label.textContent = note ? this.labelFor(note) : muted ? '×' : '';
+      label.textContent = note ? this.labelFor(note) : muted ? '×' : outside ? (this.targets!.names.get(chroma) ?? '') : '';
 
-      cell.setAttribute('aria-label', this.ariaFor(pos, name, note) + (muted ? ', muted, do not play this string' : ''));
+      const extra = muted ? ', muted, do not play this string' : isTarget && note ? ', chord tone' : outside ? `, ${this.targets!.names.get(chroma)}, chord tone outside this scale` : '';
+      cell.setAttribute('aria-label', (outside ? `${STRING_NAMES[pos.string]} string, fret ${pos.fret}` : this.ariaFor(pos, name, note)) + extra);
     }
   }
 
