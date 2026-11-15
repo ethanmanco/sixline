@@ -1,3 +1,6 @@
+import type { SongKey } from '../theory/chordScale';
+import type { Progression, Timeline } from './timeline';
+
 /**
  * Backing tracks recorded by real musicians, all under Creative Commons
  * licenses that allow sharing them here. Each mix leaves out the original
@@ -15,6 +18,8 @@ export interface License {
 
 export const CC_BY_3: License = { name: 'CC BY 3.0', url: 'https://creativecommons.org/licenses/by/3.0/' };
 export const CC0: License = { name: 'CC0 1.0', url: 'https://creativecommons.org/publicdomain/zero/1.0/' };
+/** Not a license to copy: the video plays from YouTube in YouTube's own player. */
+export const YOUTUBE_EMBED: License = { name: 'Played from YouTube', url: 'https://www.youtube.com/t/terms' };
 
 export type TrackStyle = 'blues' | 'slow-blues' | 'funk' | 'rock' | 'metal' | 'ballad';
 
@@ -29,6 +34,17 @@ export const STYLE_LABELS: Record<TrackStyle, string> = {
 
 export interface Track {
   id: string;
+  /** A recording bundled with the app, or a YouTube video played in YouTube's own player. */
+  kind?: 'audio' | 'youtube';
+  youtubeId?: string;
+  /** Where to support the artist (e.g. their store). */
+  support?: string;
+  /** The song's key, for choosing a scale per chord. */
+  key?: SongKey;
+  /** Chord chart, when known. */
+  progression?: Progression;
+  /** When each chord starts, made by tapping along. */
+  timeline?: Timeline;
   title: string;
   artist: string;
   /** The page the recording came from. */
@@ -219,6 +235,41 @@ export const TRACKS: readonly Track[] = [
     estimated: { key: true, tempo: true },
   },
   {
+    id: 'summer-days-e',
+    kind: 'youtube',
+    youtubeId: 'sNx4oNsbPNE',
+    title: 'Summer Days Guitar Backing Track Jam in E',
+    artist: 'Elevated Jam Tracks',
+    source: 'https://www.youtube.com/watch?v=sNx4oNsbPNE',
+    support: 'https://elevatedjamtracks.bandcamp.com/',
+    license: YOUTUBE_EMBED,
+    changes: 'played from YouTube',
+    file: '',
+    style: 'ballad',
+    root: 'E',
+    keyLabel: 'E major',
+    key: { root: 'E', minor: false },
+    bpm: null,
+    feel: 'straight',
+    durationSec: 0,
+    scales: ['major', 'phrygian-dominant', 'melodic-minor', 'major-pentatonic'],
+    // Chord chart as the artist lists it with the video.
+    progression: {
+      sections: [
+        { name: 'A', chords: ['Emaj7', 'C#sus9', 'C#7b9', 'Amaj7', 'Am6', 'G#m7', 'C#9', 'F#m7', 'G#m7', 'Amaj7', 'Bsus9'] },
+        {
+          name: 'B',
+          chords: [
+            'Amaj7', 'Am6', 'Emaj7', 'C#7b9',
+            'F#m7', 'Bsus9', 'Emaj7', 'C#7sus', 'C#7',
+            'Amaj7', 'Am6', 'Emaj7', 'C#7b9',
+            'F#m7', 'G#m7', 'Amaj7', 'Bsus9', 'Emaj7',
+          ],
+        },
+      ],
+    },
+  },
+  {
     id: 'vintage-ballad',
     title: 'Slow vintage ballad songwriting kit',
     artist: AB,
@@ -242,7 +293,13 @@ export function trackById(id: string | undefined): Track {
 
 /** Credit line in the form the licenses ask for. */
 export function creditText(t: Track): string {
+  if (t.kind === 'youtube') return `"${t.title}" by ${t.artist}, played from YouTube in YouTube's own player`;
   return `"${t.title}" by ${t.artist}, ${t.license.name}, ${t.changes}`;
+}
+
+/** The song's key for chord-by-chord scales: given, or read from the track's key label. */
+export function songKey(t: Track): SongKey {
+  return t.key ?? { root: t.root, minor: /minor/.test(t.keyLabel) };
 }
 
 export function formatTime(sec: number): string {
