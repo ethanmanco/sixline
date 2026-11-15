@@ -1075,3 +1075,66 @@ main:focus {
     padding-top: 2px;
   }
 }
+
+/* Two-row picker: groups, then the items in the chosen group. */
+.picker__nav {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+.picker__groups,
+.picker__items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 18px;
+}
+.picker__groups {
+  gap: 2px;
+  padding: 3px;
+  background: var(--paper-2);
+  border-radius: 10px;
+  align-self: flex-start;
+}
+.pickgroup {
+  font: 600 12px/1 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-2);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  padding: 7px 10px;
+  min-height: 30px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pickgroup:hover {
+  color: var(--ink);
+}
+.pickgroup[aria-pressed='true'] {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.pickgroup:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+@media (max-width: 700px) {
+  .picker__nav {
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+  .picker__groups,
+  .picker__items {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    scrollbar-width: thin;
+  }
+  .picker__items {
+    padding-bottom: 4px;
+  }
+}

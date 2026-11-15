@@ -78,7 +78,12 @@ export class LearnView {
     else this.renderEmpty(category, item, root);
   }
 
-  /** Chips above the fretboard for every item and voicing, so switching never needs a scroll. */
+  /**
+   * Quick picker above the fretboard, so switching never needs a scroll.
+   * Row 1: the groups (Open, Barre, 7th...). Row 2: the items in the chosen
+   * group, then the positions or voicings of the current item. It opens on the
+   * current item's group; choosing another group only swaps row 2.
+   */
   private renderPicker(
     category: Category,
     items: CatalogItem[],
@@ -91,31 +96,64 @@ export class LearnView {
     const nav = document.createElement('nav');
     nav.className = 'picker__nav';
     nav.setAttribute('aria-label', `Pick ${category.label.toLowerCase()}`);
-    const groups = category.groups ?? [{ id: '', label: category.label, short: category.label }];
-    let html = '';
-    for (const g of groups) {
-      const inGroup = items.filter((i) => (g.id ? i.group === g.id : true));
-      if (!inGroup.length) continue;
-      html += `<div class="picker__group"><span class="picker__label" aria-hidden="true">${esc(g.short)}</span>`;
+    const groups = (category.groups ?? [{ id: '', label: category.label, short: category.label }]).filter((g) =>
+      items.some((i) => (g.id ? i.group === g.id : true)),
+    );
+    const pickedGroup = focusedPick?.startsWith('group:') ? focusedPick.slice(6) : undefined;
+    let active = groups.find((g) => g.id === pickedGroup)?.id ?? current.group ?? groups[0]?.id ?? '';
+
+    const groupRow = document.createElement('div');
+    groupRow.className = 'picker__groups';
+    groupRow.setAttribute('role', 'group');
+    groupRow.setAttribute('aria-label', `${category.label} groups`);
+    groupRow.innerHTML = groups
+      .map(
+        (g) =>
+          `<button type="button" class="pickgroup" data-pick="group:${g.id}" data-group="${g.id}" aria-label="${esc(g.label)}">${esc(g.short)}</button>`,
+      )
+      .join('');
+
+    const itemRow = document.createElement('div');
+    itemRow.className = 'picker__items';
+
+    const positionsHtml = () => {
+      if (!shape || shapes.length < 2) return '';
+      const unit = shape.kind === 'chord' ? 'Voicing' : 'Position';
+      let html = `<div class="picker__group picker__group--pos"><span class="picker__label" aria-hidden="true">${unit}</span>`;
+      shapes.forEach((sh, i) => {
+        const where = sh.position?.startFret ? `fret ${sh.position.startFret}` : 'open';
+        const text = sh.position ? String(i + 1) : 'Whole neck';
+        const label = sh.position ? `${unit} ${i + 1}, ${where}` : 'Whole neck, every note';
+        html += `<a class="pick${sh.position ? ' pick--num' : ''}" data-pick="pos:${i + 1}" href="${this.link([category.id, current.id], { pos: i + 1 })}" aria-label="${label}" ${sh === shape ? 'aria-current="true"' : ''}>${text}</a>`;
+      });
+      return html + '</div>';
+    };
+
+    const paint = () => {
+      groupRow.querySelectorAll<HTMLButtonElement>('.pickgroup').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.group === active)));
+      const inGroup = items.filter((i) => (active ? i.group === active : true));
+      let html = '<div class="picker__group">';
       for (const it of inGroup) {
         html += `<a class="pick" data-pick="item:${it.id}" href="${this.link([category.id, it.id])}" aria-label="${esc(it.label(root))}" ${it.id === current.id ? 'aria-current="true"' : ''}>${esc(it.short(root))}</a>`;
       }
       html += '</div>';
-    }
-    if (shape && shapes.length > 1) {
-      const unit = shape.kind === 'chord' ? 'Voicing' : 'Position';
-      html += `<div class="picker__group picker__group--pos"><span class="picker__label" aria-hidden="true">${unit}</span>`;
-      shapes.forEach((s, i) => {
-        const where = s.position?.startFret ? `fret ${s.position.startFret}` : 'open';
-        const text = s.position ? String(i + 1) : 'Whole neck';
-        const label = s.position ? `${unit} ${i + 1}, ${where}` : 'Whole neck, every note';
-        html += `<a class="pick${s.position ? ' pick--num' : ''}" data-pick="pos:${i + 1}" href="${this.link([category.id, current.id], { pos: i + 1 })}" aria-label="${label}" ${s === shape ? 'aria-current="true"' : ''}>${text}</a>`;
-      });
-      html += '</div>';
-    }
-    nav.innerHTML = html;
+      // Positions belong to the current item, so they only show beside its own group.
+      if (active === (current.group ?? '')) html += positionsHtml();
+      itemRow.innerHTML = html;
+    };
+
+    groupRow.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('.pickgroup');
+      if (!b) return;
+      active = b.dataset.group ?? '';
+      paint();
+    });
+
+    paint();
+    if (groups.length > 1) nav.append(groupRow);
+    nav.append(itemRow);
     this.stage.setPicker(nav);
-    if (focusedPick) nav.querySelector<HTMLElement>(`[data-pick="${focusedPick}"]`)?.focus();
+    if (focusedPick && !focusedPick.startsWith('group:')) nav.querySelector<HTMLElement>(`[data-pick="${focusedPick}"]`)?.focus();
   }
 
   private renderList(category: Category, items: CatalogItem[], current: CatalogItem, root: string): void {
@@ -177,7 +215,7 @@ export class LearnView {
     const fingerLabel = shape.fingeringSource === 'chords-db' ? 'Fingering' : 'Suggested fingering';
     d.innerHTML = `
       <header class="detail__head">
-        <h2 id="detail-title">${esc(shape.name)}${shape.symbol && shape.symbol !== shape.name && shape.symbol !== shape.root ? ` <span class="detail__symbol">${esc(shape.symbol)}</span>` : ''}</h2>
+        <h2 id="detail-title">${esc(shape.name)}${shape.symbol && !shape.name.startsWith(shape.symbol) && shape.symbol !== shape.root ? ` <span class="detail__symbol">${esc(shape.symbol)}</span>` : ''}</h2>
         ${sub ? `<p class="detail__sub">${esc(sub)}</p>` : ''}
       </header>
       <dl class="facts">
