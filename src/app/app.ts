@@ -1,3 +1,4 @@
+import { JamView } from '../jam/jamView';
 import { LearnView } from '../learn/learnView';
 import { KEYS, keyOptionLabel, normalizeKey } from '../theory/keys';
 import { href, onRoute, parseRoute } from './router';
@@ -16,20 +17,21 @@ export function createApp(root: HTMLElement): void {
     <header class="top">
       <a class="brand" href="${href(['learn'])}">${LOGO}<span>Sixline</span></a>
       <nav class="sections" aria-label="Sections">
-        <a class="sections__link" href="${href(['learn'])}" aria-current="page">Learn</a>
-        <span class="sections__link sections__link--soon" aria-disabled="true">Jam<small>soon</small></span>
+        <a class="sections__link" data-section="learn" href="${href(['learn'])}">Learn</a>
+        <a class="sections__link" data-section="jam" href="${href(['jam'])}">Jam</a>
         <span class="sections__link sections__link--soon" aria-disabled="true">Songs<small>soon</small></span>
       </nav>
     </header>
     <main id="main" tabindex="-1"></main>
     <footer class="foot">
-      <p>Sixline is free and open source. Guitar sound from the FluidR3 soundfont by Frank Wen.</p>
+      <p>Sixline is free and open source. Guitar sound from the FluidR3 soundfont by Frank Wen. Jam backing tracks by Admiral Bob, BaDoink, and grtgtrplyr2 under Creative Commons licenses.</p>
     </footer>`;
 
   const main = root.querySelector<HTMLElement>('main')!;
   const stage = new Stage();
   const learn = new LearnView(stage);
-  main.append(stage.el, learn.el);
+  const jam = new JamView(stage);
+  main.append(jam.top, stage.el, learn.el, jam.bottom);
 
   // Key picker: lives next to Play, so it is always in reach.
   const keyLabel = document.createElement('label');
@@ -50,6 +52,22 @@ export function createApp(root: HTMLElement): void {
   });
 
   onRoute((route) => {
+    const inJam = route.section === 'jam';
+    root.querySelectorAll<HTMLElement>('.sections__link[data-section]').forEach((a) => {
+      if (a.dataset.section === route.section || (!inJam && a.dataset.section === 'learn')) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    });
+    jam.top.hidden = !inJam;
+    jam.bottom.hidden = !inJam;
+    learn.el.hidden = inJam;
+    // In Jam the key belongs to the track, so the key picker steps aside.
+    keyLabel.hidden = inJam;
+    stage.setPlayText(inJam ? 'Hear scale' : 'Play');
+    if (inJam) {
+      jam.render(route);
+      return;
+    }
+    jam.stop();
     // The link's key wins (so shared links open in the right key), then the last key used.
     const fromLink = normalizeKey(route.params.get('key'));
     const key = fromLink ?? settings.get().key;

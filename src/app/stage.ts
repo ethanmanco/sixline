@@ -29,6 +29,7 @@ export class Stage {
   private playBtn: HTMLButtonElement;
   private status: HTMLElement;
   private stepListeners = new Set<(indices: number[] | null) => void>();
+  private playText = 'Play';
 
   constructor() {
     this.fretboard = new Fretboard({
@@ -180,6 +181,12 @@ export class Stage {
     window.scrollBy({ top: rect.top - top - 8, behavior: reduce ? 'auto' : 'smooth' });
   }
 
+  /** What the Play button says when idle, e.g. "Hear scale" in Jam. */
+  setPlayText(text: string): void {
+    this.playText = text;
+    if (!guitar.isPlaying) this.playBtn.querySelector('[data-play-text]')!.textContent = text;
+  }
+
   /** Puts a key picker (or any small control) next to the Play button. */
   setKeyControl(el: HTMLElement): void {
     this.el.querySelector('[data-key-slot]')!.replaceChildren(el);
@@ -276,7 +283,7 @@ export class Stage {
     this.playBtn.classList.toggle('is-playing', on);
     this.playBtn.querySelector('[data-icon-play]')!.toggleAttribute('hidden', on);
     this.playBtn.querySelector('[data-icon-stop]')!.toggleAttribute('hidden', !on);
-    this.playBtn.querySelector('[data-play-text]')!.textContent = on ? 'Stop' : 'Play';
+    this.playBtn.querySelector('[data-play-text]')!.textContent = on ? 'Stop' : this.playText;
     const name = this.shape ? this.describe(this.shape) : '';
     this.playBtn.setAttribute('aria-label', on ? 'Stop' : `Play ${name}`.trim());
   }

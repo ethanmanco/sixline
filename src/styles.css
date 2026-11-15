@@ -1175,3 +1175,157 @@ main:focus {
   font-size: 13px;
   color: var(--ink-3);
 }
+
+/* ---------- Jam ---------- */
+
+.jam-transport {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  display: grid;
+  gap: 12px;
+}
+.jt__eyebrow {
+  margin: 0;
+  font: 600 11px/1 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+.jt__title {
+  margin: 4px 0 2px;
+  font: 700 26px/1.15 var(--font-display);
+  letter-spacing: -0.01em;
+}
+.jt__meta {
+  margin: 0;
+  color: var(--ink-2);
+}
+.jt__controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.jt__seek {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+  height: 28px;
+}
+.jt__time {
+  font: 500 13px/1 var(--font-mono);
+  color: var(--ink-2);
+  min-width: 36px;
+  text-align: center;
+}
+.jt__opts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+}
+.jt__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.jt__opt select {
+  font: 600 14px/1 var(--font-ui);
+  color: var(--ink);
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.jt__opt input[type='range'] {
+  accent-color: var(--accent);
+  width: 110px;
+}
+.jt__credit,
+.jt__estimate {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.jt__credit a {
+  color: var(--ink-2);
+}
+.jt__estimate {
+  color: var(--accent-strong);
+}
+
+.jam-library__title {
+  font: 700 24px/1.2 var(--font-display);
+  margin: 4px 0 4px;
+}
+.jam-library__intro {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+  max-width: 70ch;
+}
+.tracks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+}
+.track {
+  display: grid;
+  gap: 3px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  text-decoration: none;
+}
+.track:hover {
+  border-color: var(--ink-3);
+}
+.track[aria-current='true'] {
+  border-color: var(--ink);
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+.track__title {
+  font-weight: 600;
+}
+.track__meta,
+.track__by {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.track__by {
+  color: var(--ink-3);
+}
+.picker button.pick {
+  background: transparent;
+  cursor: pointer;
+}
+.picker button.pick[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+@media (max-width: 700px) {
+  .jam-transport {
+    padding: 14px;
+  }
+  .jt__title {
+    font-size: 21px;
+  }
+  .jt__controls {
+    flex-wrap: wrap;
+  }
+  .jt__play {
+    order: -1;
+  }
+  .jt__seek {
+    flex-basis: 100%;
+    order: 2;
+  }
+}
