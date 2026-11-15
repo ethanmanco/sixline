@@ -225,6 +225,7 @@ export class LearnView {
         <div><dt>${fingerLabel}</dt><dd>${esc(shape.info.fingeringNote ?? '')}</dd></div>
       </dl>
       <div class="detail__tab" data-tab></div>
+      <p class="detail__note">Notation is written an octave higher than it sounds, as in all guitar music. Read down from each note to its fret.</p>
       <details class="ascii">
         <summary>Text tab</summary>
         <pre>${esc(tabAscii(shape))}</pre>
@@ -236,7 +237,7 @@ export class LearnView {
         <p>${esc(shape.info.useWhen)}</p>
       </div>`;
 
-    const tab = renderTab(shape, { size: 'full' });
+    const tab = renderTab(shape, { size: 'full', notation: true });
     d.querySelector('[data-tab]')!.append(tab.el);
     this.unStep?.();
     this.unStep = this.stage.onStep((ids) => tab.highlight(ids?.[0] ?? null));

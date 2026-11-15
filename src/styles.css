@@ -1137,3 +1137,41 @@ main:focus {
     padding-bottom: 4px;
   }
 }
+
+/* ---------- Standard notation ---------- */
+
+.nota__line,
+.nota__ledger {
+  stroke: var(--ink-2);
+  stroke-width: 1;
+}
+.nota__clef {
+  fill: var(--ink);
+  font-family: 'Noto Music', serif;
+}
+.nota__eight {
+  fill: var(--ink-2);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+.nota__head {
+  fill: var(--ink);
+}
+.nota__head--root {
+  fill: var(--accent);
+}
+.nota__acc {
+  fill: var(--ink);
+  font-family: 'Noto Music', serif;
+}
+.tab__word {
+  fill: var(--ink-3);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.detail__note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
