@@ -2,7 +2,7 @@ import { Chord } from 'tonal';
 import type { Shape } from '../core/types';
 import { ARPEGGIO_DESCRIPTIONS } from '../content/descriptions';
 import { windowPositions } from '../fingering/positions';
-import { readableRoot } from '../theory/scales';
+import { plainNames, readableRoot } from '../theory/scales';
 import { degreeLabel, noteChroma } from '../theory/spelling';
 import { handLo, spellPlaced, describeHand, wholeNeckShape, type Spelling } from './scaleShapes';
 
@@ -12,22 +12,29 @@ export interface ArpeggioType {
   /** Chord symbol after the root, as guitarists write it. */
   symbol: string;
   tonalSymbol: string;
-  group: 'triads' | 'sevenths';
+  group: 'triads' | 'sevenths' | 'extended';
 }
 
 export const ARPEGGIO_GROUPS = [
   { id: 'triads', label: 'Triads', short: 'Triads' },
   { id: 'sevenths', label: '7th arpeggios', short: '7th' },
+  { id: 'extended', label: '6th and 9th arpeggios', short: '6th, 9th' },
 ];
 
 export const ARPEGGIO_TYPES: readonly ArpeggioType[] = [
   { id: 'major', label: 'Major', symbol: '', tonalSymbol: 'M', group: 'triads' },
   { id: 'minor', label: 'Minor', symbol: 'm', tonalSymbol: 'm', group: 'triads' },
+  { id: 'dim', label: 'Diminished', symbol: 'dim', tonalSymbol: 'dim', group: 'triads' },
+  { id: 'aug', label: 'Augmented', symbol: 'aug', tonalSymbol: 'aug', group: 'triads' },
   { id: 'dom7', label: 'Dominant 7', symbol: '7', tonalSymbol: '7', group: 'sevenths' },
   { id: 'maj7', label: 'Major 7', symbol: 'maj7', tonalSymbol: 'maj7', group: 'sevenths' },
   { id: 'm7', label: 'Minor 7', symbol: 'm7', tonalSymbol: 'm7', group: 'sevenths' },
   { id: 'm7b5', label: 'Minor 7 flat 5', symbol: 'm7b5', tonalSymbol: 'm7b5', group: 'sevenths' },
   { id: 'dim7', label: 'Diminished 7', symbol: 'dim7', tonalSymbol: 'dim7', group: 'sevenths' },
+  { id: 'mmaj7', label: 'Minor major 7', symbol: 'm(maj7)', tonalSymbol: 'mMaj7', group: 'sevenths' },
+  { id: 'six', label: 'Major 6', symbol: '6', tonalSymbol: '6', group: 'extended' },
+  { id: 'm6', label: 'Minor 6', symbol: 'm6', tonalSymbol: 'm6', group: 'extended' },
+  { id: 'nine', label: 'Dominant 9', symbol: '9', tonalSymbol: '9', group: 'extended' },
 ];
 
 export function spellArpeggio(key: string, type: ArpeggioType): Spelling & { intervals: string[]; symbol: string } {
@@ -38,7 +45,7 @@ export function spellArpeggio(key: string, type: ArpeggioType): Spelling & { int
   return {
     root,
     symbol: `${root}${type.symbol}`,
-    notes: c.notes,
+    notes: plainNames(c.notes),
     intervals: c.intervals,
     degrees: c.intervals.map(degreeLabel),
   };

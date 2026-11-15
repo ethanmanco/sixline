@@ -117,7 +117,7 @@ export function buildScaleShapes(key: string, type: ScaleType): Shape[] {
       boxes = bluesBoxes(base, blue).map((b) => toFretNotes(b, spelling));
       break;
     }
-    case 'heptatonic':
+    case 'window':
       boxes = windowPositions(chromas, chromas).map((placed) => {
         const notes = spellPlaced(placed, spelling);
         return { notes, lo: handLo(notes) };

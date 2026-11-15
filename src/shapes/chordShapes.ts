@@ -1,12 +1,12 @@
 import type { FretNote, Shape, StringIndex } from '../core/types';
 import { CHORD_DESCRIPTIONS } from '../content/descriptions';
-import { dbPositions, sameFrets, toVoicing, type ChordDb, type Voicing } from '../chords/db';
+import { dbPositions, dbSlashPositions, sameFrets, toVoicing, type ChordDb, type Voicing } from '../chords/db';
 import { movableVoicing } from '../chords/movable';
 import { CHORD_TYPES, spellChord, type ChordSpelling, type ChordType } from '../theory/chords';
 import { MAX_FRET, OPEN_MIDI, STRING_NAMES, chromaOf, stringName } from '../theory/guitar';
 import { noteChroma } from '../theory/spelling';
 
-export type ChordGroup = 'open' | 'barre' | 'power' | 'seventh' | 'sus';
+export type ChordGroup = 'open' | 'barre' | 'power' | 'seventh' | 'sus' | 'sixnine' | 'dimaug' | 'slash';
 
 export const CHORD_GROUPS: { id: ChordGroup; label: string; short: string }[] = [
   { id: 'open', label: 'Open chords', short: 'Open' },
@@ -14,6 +14,9 @@ export const CHORD_GROUPS: { id: ChordGroup; label: string; short: string }[] = 
   { id: 'power', label: 'Power chords', short: 'Power' },
   { id: 'seventh', label: '7th chords', short: '7th' },
   { id: 'sus', label: 'Sus and add9', short: 'Sus, add9' },
+  { id: 'sixnine', label: '6th and 9th chords', short: '6th, 9th' },
+  { id: 'dimaug', label: 'Diminished and augmented', short: 'Dim, aug' },
+  { id: 'slash', label: 'Slash chords', short: 'Slash' },
 ];
 
 export interface ChordItem {
@@ -25,7 +28,40 @@ export interface ChordItem {
   /** Chip label for the quick picker, e.g. "A", "Am", "A7". Shown under its group name. */
   short: (root: string) => string;
   /** Where the voicings come from. */
-  source: { kind: 'open' } | { kind: 'all' } | { kind: 'movable'; template: string; shapeLabel: string };
+  source:
+    | { kind: 'open' }
+    | { kind: 'all' }
+    | { kind: 'movable'; template: string; shapeLabel: string }
+    /** A chord over one of its own notes: `bass` indexes the chord's notes (1 = 3rd, 2 = 5th). */
+    | { kind: 'slash'; template: string; bass: number };
+}
+
+/** "G/B" for G major over its 3rd. */
+export function slashName(root: string, type: ChordType, bass: number): string {
+  const s = spellChord(root, type);
+  return `${s.name}/${s.notes[bass]}`;
+}
+
+function barreItem(id: string, type: ChordType, template: string, shape: 'E' | 'A', name: string, symbol: string): ChordItem {
+  return {
+    id,
+    group: 'barre',
+    type,
+    short: (r) => `${r}${symbol} ${shape} shape`,
+    label: (r) => `${r} ${name}, ${shape} shape`,
+    source: { kind: 'movable', template, shapeLabel: `${shape}-shape barre` },
+  };
+}
+
+function slashItem(id: string, type: ChordType, template: string, bass: number, what: string): ChordItem {
+  return {
+    id,
+    group: 'slash',
+    type,
+    short: (r) => slashName(r, type, bass),
+    label: (r) => `${slashName(r, type, bass)} (${type.label}, ${what} in the bass)`,
+    source: { kind: 'slash', template, bass },
+  };
 }
 
 const T = CHORD_TYPES;
@@ -34,34 +70,16 @@ export const CHORD_ITEMS: readonly ChordItem[] = [
   { id: 'open-major', group: 'open', type: T.major, short: (r) => r, label: (r) => `${r} major`, source: { kind: 'open' } },
   { id: 'open-minor', group: 'open', type: T.minor, short: (r) => `${r}m`, label: (r) => `${r} minor`, source: { kind: 'open' } },
   { id: 'open-7', group: 'open', type: T.dom7, short: (r) => `${r}7`, label: (r) => `${r}7`, source: { kind: 'open' } },
-  {
-    id: 'barre-major-e',
-    group: 'barre',
-    type: T.major,
-    short: (r) => `${r} E shape`, label: (r) => `${r} major, E shape`,
-    source: { kind: 'movable', template: 'major-e', shapeLabel: 'E-shape barre' },
-  },
-  {
-    id: 'barre-major-a',
-    group: 'barre',
-    type: T.major,
-    short: (r) => `${r} A shape`, label: (r) => `${r} major, A shape`,
-    source: { kind: 'movable', template: 'major-a', shapeLabel: 'A-shape barre' },
-  },
-  {
-    id: 'barre-minor-e',
-    group: 'barre',
-    type: T.minor,
-    short: (r) => `${r}m E shape`, label: (r) => `${r} minor, E shape`,
-    source: { kind: 'movable', template: 'minor-e', shapeLabel: 'E-shape barre' },
-  },
-  {
-    id: 'barre-minor-a',
-    group: 'barre',
-    type: T.minor,
-    short: (r) => `${r}m A shape`, label: (r) => `${r} minor, A shape`,
-    source: { kind: 'movable', template: 'minor-a', shapeLabel: 'A-shape barre' },
-  },
+  barreItem('barre-major-e', T.major, 'major-e', 'E', 'major', ''),
+  barreItem('barre-major-a', T.major, 'major-a', 'A', 'major', ''),
+  barreItem('barre-minor-e', T.minor, 'minor-e', 'E', 'minor', 'm'),
+  barreItem('barre-minor-a', T.minor, 'minor-a', 'A', 'minor', 'm'),
+  barreItem('barre-7-e', T.dom7, 'dom7-e', 'E', 'dominant 7', '7'),
+  barreItem('barre-7-a', T.dom7, 'dom7-a', 'A', 'dominant 7', '7'),
+  barreItem('barre-m7-e', T.m7, 'm7-e', 'E', 'minor 7', 'm7'),
+  barreItem('barre-m7-a', T.m7, 'm7-a', 'A', 'minor 7', 'm7'),
+  barreItem('barre-maj7-e', T.maj7, 'maj7-e', 'E', 'major 7', 'maj7'),
+  barreItem('barre-maj7-a', T.maj7, 'maj7-a', 'A', 'major 7', 'maj7'),
   {
     id: 'power-6',
     group: 'power',
@@ -79,9 +97,21 @@ export const CHORD_ITEMS: readonly ChordItem[] = [
   { id: 'dom7', group: 'seventh', type: T.dom7, short: (r) => `${r}7`, label: (r) => `${r}7 (dominant 7)`, source: { kind: 'all' } },
   { id: 'maj7', group: 'seventh', type: T.maj7, short: (r) => `${r}maj7`, label: (r) => `${r}maj7 (major 7)`, source: { kind: 'all' } },
   { id: 'm7', group: 'seventh', type: T.m7, short: (r) => `${r}m7`, label: (r) => `${r}m7 (minor 7)`, source: { kind: 'all' } },
+  { id: 'm7b5', group: 'seventh', type: T.m7b5, short: (r) => `${r}m7b5`, label: (r) => `${r}m7b5 (minor 7 flat 5)`, source: { kind: 'all' } },
   { id: 'sus2', group: 'sus', type: T.sus2, short: (r) => `${r}sus2`, label: (r) => `${r}sus2`, source: { kind: 'all' } },
   { id: 'sus4', group: 'sus', type: T.sus4, short: (r) => `${r}sus4`, label: (r) => `${r}sus4`, source: { kind: 'all' } },
+  { id: '7sus4', group: 'sus', type: T.sus7, short: (r) => `${r}7sus4`, label: (r) => `${r}7sus4`, source: { kind: 'all' } },
   { id: 'add9', group: 'sus', type: T.add9, short: (r) => `${r}add9`, label: (r) => `${r}add9`, source: { kind: 'all' } },
+  { id: '6', group: 'sixnine', type: T.six, short: (r) => `${r}6`, label: (r) => `${r}6 (major 6)`, source: { kind: 'all' } },
+  { id: 'm6', group: 'sixnine', type: T.m6, short: (r) => `${r}m6`, label: (r) => `${r}m6 (minor 6)`, source: { kind: 'all' } },
+  { id: '9', group: 'sixnine', type: T.nine, short: (r) => `${r}9`, label: (r) => `${r}9 (dominant 9)`, source: { kind: 'all' } },
+  { id: 'dim', group: 'dimaug', type: T.dim, short: (r) => `${r}dim`, label: (r) => `${r}dim (diminished)`, source: { kind: 'all' } },
+  { id: 'dim7', group: 'dimaug', type: T.dim7, short: (r) => `${r}dim7`, label: (r) => `${r}dim7 (diminished 7)`, source: { kind: 'all' } },
+  { id: 'aug', group: 'dimaug', type: T.aug, short: (r) => `${r}aug`, label: (r) => `${r}aug (augmented)`, source: { kind: 'all' } },
+  slashItem('slash-major-3rd', T.major, 'major-over-3rd', 1, '3rd'),
+  slashItem('slash-major-5th', T.major, 'major-over-5th', 2, '5th'),
+  slashItem('slash-minor-3rd', T.minor, 'minor-over-3rd', 1, 'b3'),
+  slashItem('slash-minor-5th', T.minor, 'minor-over-5th', 2, '5th'),
 ];
 
 /** An open voicing sits in the first few frets and lets at least one string ring open. */
@@ -97,9 +127,12 @@ function fitsNeck(v: Voicing): boolean {
 /**
  * chords-db is community data and a few entries have slips: a note outside the
  * chord, or a fretted note with no finger. Those voicings are left out rather
- * than shown with a wrong note or a guessed finger.
+ * than shown with a wrong note or a guessed finger. Voicings missing a chord
+ * tone (other than the 5th) are left out too, such as a "C9" with no Bb.
  */
-export function isUsableVoicing(v: Voicing, chordChromas: readonly number[]): boolean {
+export function isUsableVoicing(v: Voicing, chordChromas: readonly number[], requiredChromas: readonly number[] = [chordChromas[0]]): boolean {
+  const sounding = new Set(v.frets.map((f, s) => (f === null ? -1 : chromaOf(OPEN_MIDI[s] + f))));
+  if (!requiredChromas.every((c) => sounding.has(c))) return false;
   return v.frets.every((f, s) => {
     if (f === null) return true;
     if (!chordChromas.includes(chromaOf(OPEN_MIDI[s] + f))) return false;
@@ -157,7 +190,7 @@ export function voicingToShape(
       finger: f === 0 ? 0 : v.fingers[s] || null,
     });
   });
-  const desc = CHORD_DESCRIPTIONS[item.type.id] ?? { sound: '', useWhen: '' };
+  const desc = CHORD_DESCRIPTIONS[item.id] ?? CHORD_DESCRIPTIONS[item.type.id] ?? { sound: '', useWhen: '' };
   return {
     id: meta.id,
     kind: 'chord',
@@ -184,10 +217,12 @@ export function voicingToShape(
 export function buildChordShapes(db: ChordDb, root: string, item: ChordItem): Shape[] {
   const spelling = spellChord(root, item.type);
   const chordChromas = spelling.notes.map(noteChroma);
+  // Every chord tone must sound, except a perfect 5th, which guitarists often leave out.
+  const required = chordChromas.filter((_, i) => spelling.intervals[i] !== '5P');
   const fromDb = item.type.dbSuffix
     ? dbPositions(db, root, item.type.dbSuffix)
         .map(toVoicing)
-        .filter((v) => fitsNeck(v) && isUsableVoicing(v, chordChromas))
+        .filter((v) => fitsNeck(v) && isUsableVoicing(v, chordChromas, required))
     : [];
 
   let voicings: { v: Voicing; fromDb: boolean }[];
@@ -201,8 +236,26 @@ export function buildChordShapes(db: ChordDb, root: string, item: ChordItem): Sh
       voicings = fromDb.map((v) => ({ v, fromDb: true }));
       subtitle = (v) => (isOpenVoicing(v) ? 'Open voicing' : `Voicing at fret ${lowestFretted(v)}`);
       break;
+    case 'slash': {
+      // chords-db has a few slash chords (mostly open ones); the movable shape covers every key.
+      const bassChroma = chordChromas[item.source.bass];
+      const isBass = (v: Voicing) => {
+        const lowest = v.frets.findIndex((f) => f !== null);
+        return lowest >= 0 && chromaOf(OPEN_MIDI[lowest] + (v.frets[lowest] as number)) === bassChroma;
+      };
+      const fromSlash = dbSlashPositions(db, root, item.type.id === 'minor', bassChroma)
+        .map(toVoicing)
+        .filter((v) => fitsNeck(v) && isUsableVoicing(v, chordChromas, required) && isBass(v));
+      const generated = movableVoicing(item.source.template, bassChroma);
+      voicings = fromSlash.map((v) => ({ v, fromDb: true }));
+      if (!fromSlash.some((v) => sameFrets(v, generated))) voicings.push({ v: generated, fromDb: false });
+      const bassName = spelling.notes[item.source.bass];
+      subtitle = (v) =>
+        isOpenVoicing(v) ? `Open shape, ${bassName} in the bass` : `Movable shape at fret ${lowestFretted(v)}, ${bassName} in the bass`;
+      break;
+    }
     case 'movable': {
-      const generated = movableVoicing(item.source.template, noteChroma(root));
+      const generated = movableVoicing(item.source.template, noteChroma(spelling.root));
       // Prefer the chords-db fingering when it has this exact voicing.
       const match = fromDb.find((v) => sameFrets(v, generated));
       voicings = [{ v: match ?? generated, fromDb: !!match }];
@@ -213,6 +266,7 @@ export function buildChordShapes(db: ChordDb, root: string, item: ChordItem): Sh
   }
   voicings.sort((a, b) => lowestFretted(a.v) - lowestFretted(b.v));
 
+  const symbol = item.source.kind === 'slash' ? slashName(spelling.root, item.type, item.source.bass) : undefined;
   return voicings.map(({ v, fromDb: src }, i) =>
     voicingToShape(
       v,
@@ -227,5 +281,5 @@ export function buildChordShapes(db: ChordDb, root: string, item: ChordItem): Sh
       },
       item,
     ),
-  );
+  ).map((shape) => (symbol ? { ...shape, symbol } : shape));
 }

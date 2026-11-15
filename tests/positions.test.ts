@@ -14,6 +14,12 @@ const ARP_FORMULAS: Record<string, { semis: number[]; degrees: string[] }> = {
   m7: { semis: [0, 3, 7, 10], degrees: ['1', 'b3', '5', 'b7'] },
   m7b5: { semis: [0, 3, 6, 10], degrees: ['1', 'b3', 'b5', 'b7'] },
   dim7: { semis: [0, 3, 6, 9], degrees: ['1', 'b3', 'b5', 'bb7'] },
+  dim: { semis: [0, 3, 6], degrees: ['1', 'b3', 'b5'] },
+  aug: { semis: [0, 4, 8], degrees: ['1', '3', '#5'] },
+  mmaj7: { semis: [0, 3, 7, 11], degrees: ['1', 'b3', '5', '7'] },
+  six: { semis: [0, 4, 7, 9], degrees: ['1', '3', '5', '6'] },
+  m6: { semis: [0, 3, 7, 9], degrees: ['1', 'b3', '5', '6'] },
+  nine: { semis: [0, 4, 7, 10, 2], degrees: ['1', '3', '5', 'b7', '9'] },
 };
 
 function frets(shape: Shape): string {
@@ -68,14 +74,14 @@ describe('every scale in every key: positions and whole neck', () => {
         const scaleChromas = shapes[0].info.noteNames.map(chromaOfName);
         const chromas = new Set(scaleChromas);
         const r = chromaOfName(root);
-        expect(positions).toHaveLength(type.family === 'heptatonic' ? 7 : 5);
+        expect(positions).toHaveLength(type.family === 'window' ? scaleChromas.length : 5);
         for (const s of positions) {
           checkPosition(s, chromas, r);
           expect(s.fingeringSource).toBe('suggested');
-          if (type.family === 'heptatonic') checkWindowFingers(s);
+          if (type.family === 'window') checkWindowFingers(s);
         }
         // Position k starts on scale note k on the low E string (blues follows the pentatonic boxes).
-        if (type.family === 'heptatonic') {
+        if (type.family === 'window') {
           expect(positions.map((s) => s.notes[0].midi % 12)).toEqual(scaleChromas);
         }
         // Whole neck: every scale note on every string, played once per pitch, low to high.

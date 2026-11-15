@@ -65,6 +65,21 @@ export function dbPositions(db: ChordDb, root: string, suffix: string): DbPositi
   return list.find((c) => c.suffix === suffix)?.positions ?? [];
 }
 
+/** chords-db slash chords for a root, e.g. "/B" or "m/C", whose bass note sounds like `bassChroma`. */
+export function dbSlashPositions(db: ChordDb, root: string, minor: boolean, bassChroma: number): DbPosition[] {
+  const list = db.chords[dbKeyFor(db, root)] ?? [];
+  const prefix = minor ? 'm/' : '/';
+  const match = list.find((c) => {
+    if (!c.suffix.startsWith(prefix)) return false;
+    try {
+      return noteChroma(c.suffix.slice(prefix.length)) === bassChroma;
+    } catch {
+      return false;
+    }
+  });
+  return match?.positions ?? [];
+}
+
 export interface Voicing {
   /** Absolute fret per string, low E first. null = muted. */
   frets: (number | null)[];

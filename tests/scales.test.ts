@@ -15,6 +15,13 @@ const FORMULAS: Record<string, { semis: number[]; degrees: string[] }> = {
   lydian: { semis: [0, 2, 4, 6, 7, 9, 11], degrees: ['1', '2', '3', '#4', '5', '6', '7'] },
   mixolydian: { semis: [0, 2, 4, 5, 7, 9, 10], degrees: ['1', '2', '3', '4', '5', '6', 'b7'] },
   locrian: { semis: [0, 1, 3, 5, 6, 8, 10], degrees: ['1', 'b2', 'b3', '4', 'b5', 'b6', 'b7'] },
+  'major-blues': { semis: [0, 2, 3, 4, 7, 9], degrees: ['1', '2', 'b3', '3', '5', '6'] },
+  'harmonic-minor': { semis: [0, 2, 3, 5, 7, 8, 11], degrees: ['1', '2', 'b3', '4', '5', 'b6', '7'] },
+  'melodic-minor': { semis: [0, 2, 3, 5, 7, 9, 11], degrees: ['1', '2', 'b3', '4', '5', '6', '7'] },
+  'phrygian-dominant': { semis: [0, 1, 4, 5, 7, 8, 10], degrees: ['1', 'b2', '3', '4', '5', 'b6', 'b7'] },
+  'whole-tone': { semis: [0, 2, 4, 6, 8, 10], degrees: ['1', '2', '3', '#4', '#5', '#6'] },
+  'diminished-wh': { semis: [0, 2, 3, 5, 6, 8, 9, 11], degrees: ['1', '2', 'b3', '4', 'b5', 'b6', '6', '7'] },
+  'diminished-hw': { semis: [0, 1, 3, 4, 6, 7, 9, 10], degrees: ['1', 'b2', 'b3', '3', '#4', '5', '6', 'b7'] },
 };
 
 describe('degreeLabel', () => {
@@ -53,9 +60,11 @@ describe('every scale in every key', () => {
         const rootChroma = chromaOfName(root);
         const got = s.notes.map((n) => (chromaOfName(n) - rootChroma + 12) % 12);
         expect(got).toEqual(formula.semis);
-        // Each letter once, except the blues scale, which repeats one letter for its blue note.
+        // Each letter once, except the blues scales, which repeat one letter for the blue note,
+        // and the eight-note diminished scales, which cannot fit in seven letters.
         const letters = new Set(s.notes.map((n) => n[0])).size;
-        expect(letters).toBe(type.id === 'blues' ? s.notes.length - 1 : s.notes.length);
+        if (type.family === 'blues') expect(letters).toBe(s.notes.length - 1);
+        else if (s.notes.length <= 7) expect(letters).toBe(s.notes.length);
         // Readable: no double sharps or flats.
         for (const n of s.notes) expect(n).not.toMatch(/bb|##/);
       });

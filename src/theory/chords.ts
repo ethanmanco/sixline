@@ -1,5 +1,5 @@
 import { Chord } from 'tonal';
-import { readableRoot } from './scales';
+import { plainNames, readableRoot } from './scales';
 import { degreeLabel } from './spelling';
 
 export interface ChordType {
@@ -25,6 +25,14 @@ export const CHORD_TYPES: Record<string, ChordType> = {
   sus2: { id: 'sus2', label: 'sus2', symbol: 'sus2', tonalSymbol: 'sus2', dbSuffix: 'sus2' },
   sus4: { id: 'sus4', label: 'sus4', symbol: 'sus4', tonalSymbol: 'sus4', dbSuffix: 'sus4' },
   add9: { id: 'add9', label: 'add9', symbol: 'add9', tonalSymbol: 'add9', dbSuffix: 'add9' },
+  m7b5: { id: 'm7b5', label: 'minor 7 flat 5', symbol: 'm7b5', tonalSymbol: 'm7b5', dbSuffix: 'm7b5' },
+  sus7: { id: 'sus7', label: '7sus4', symbol: '7sus4', tonalSymbol: '7sus4', dbSuffix: '7sus4' },
+  dim: { id: 'dim', label: 'diminished', symbol: 'dim', tonalSymbol: 'dim', dbSuffix: 'dim' },
+  dim7: { id: 'dim7', label: 'diminished 7', symbol: 'dim7', tonalSymbol: 'dim7', dbSuffix: 'dim7' },
+  aug: { id: 'aug', label: 'augmented', symbol: 'aug', tonalSymbol: 'aug', dbSuffix: 'aug' },
+  six: { id: 'six', label: '6', symbol: '6', tonalSymbol: '6', dbSuffix: '6' },
+  m6: { id: 'm6', label: 'minor 6', symbol: 'm6', tonalSymbol: 'm6', dbSuffix: 'm6' },
+  nine: { id: 'nine', label: '9', symbol: '9', tonalSymbol: '9', dbSuffix: '9' },
 };
 
 export interface ChordSpelling {
@@ -44,7 +52,7 @@ export function spellChord(key: string, type: ChordType): ChordSpelling {
   return {
     root,
     name: `${root}${type.symbol}`,
-    notes: c.notes,
+    notes: plainNames(c.notes),
     intervals: c.intervals,
     degrees: c.intervals.map(degreeLabel),
   };

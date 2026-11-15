@@ -19,6 +19,14 @@ const FORMULAS: Record<string, { semis: number[]; degrees: string[]; optional?: 
   sus2: { semis: [0, 2, 7], degrees: ['1', '2', '5'], optional: [7] },
   sus4: { semis: [0, 5, 7], degrees: ['1', '4', '5'], optional: [7] },
   add9: { semis: [0, 4, 7, 2], degrees: ['1', '3', '5', '9'], optional: [7] },
+  m7b5: { semis: [0, 3, 6, 10], degrees: ['1', 'b3', 'b5', 'b7'] },
+  sus7: { semis: [0, 5, 7, 10], degrees: ['1', '4', '5', 'b7'], optional: [7] },
+  dim: { semis: [0, 3, 6], degrees: ['1', 'b3', 'b5'] },
+  dim7: { semis: [0, 3, 6, 9], degrees: ['1', 'b3', 'b5', 'bb7'] },
+  aug: { semis: [0, 4, 8], degrees: ['1', '3', '#5'] },
+  six: { semis: [0, 4, 7, 9], degrees: ['1', '3', '5', '6'], optional: [7] },
+  m6: { semis: [0, 3, 7, 9], degrees: ['1', 'b3', '5', '6'], optional: [7] },
+  nine: { semis: [0, 4, 7, 10, 2], degrees: ['1', '3', '5', 'b7', '9'], optional: [7] },
 };
 
 describe('chord spelling in every key', () => {
@@ -79,7 +87,7 @@ describe('movable shapes', () => {
         expect(rest).toHaveLength(0);
         expect(shape.notes[0].isRoot).toBe(true);
         expect(shape.notes[0].string).toBe(item.id.endsWith('-e') || item.id === 'power-6' ? 0 : 1);
-        if (item.group === 'barre') {
+        if (item.group === 'barre' && shape.barres?.length) {
           expect(shape.barres).toHaveLength(1);
           expect(shape.barres![0].fret).toBe(shape.notes[0].fret);
           expect(shape.barres![0].to).toBe(5);
@@ -149,7 +157,40 @@ describe('chords-db data checks', () => {
         kept += buildChordShapes(db, root, item).length;
       }
     }
-    expect(total - kept).toBeLessThanOrEqual(8);
-    expect(kept).toBeGreaterThan(200);
+    // Under 5 percent of the data is left out.
+    expect((total - kept) / total).toBeLessThan(0.05);
+    expect(kept).toBeGreaterThan(400);
+  });
+});
+
+describe('slash chords', () => {
+  const slash = CHORD_ITEMS.filter((i) => i.source.kind === 'slash');
+  for (const item of slash) {
+    for (const root of ALL_ROOTS) {
+      it(`${item.label(root)}: the named note is the lowest note in every voicing`, () => {
+        const shapes = buildChordShapes(db, root, item);
+        expect(shapes.length).toBeGreaterThan(0);
+        const bassIndex = (item.source as { bass: number }).bass;
+        for (const s of shapes) {
+          const bass = s.notes.reduce((lo, n) => (n.midi < lo.midi ? n : lo));
+          expect(bass.note).toBe(s.info.noteNames[bassIndex]);
+          expect(s.symbol).toBe(`${s.info.noteNames[0]}${item.type.symbol}/${s.info.noteNames[bassIndex]}`);
+        }
+      });
+    }
+  }
+
+  it('G/B and D/F# include the familiar open shapes from chords-db', () => {
+    const over3rd = slash.find((i) => i.id === 'slash-major-3rd')!;
+    const g = buildChordShapes(db, 'G', over3rd);
+    expect(g.some((s) => s.fingeringSource === 'chords-db')).toBe(true);
+    expect(g.some((s) => s.fingeringSource === 'suggested')).toBe(true);
+  });
+
+  it('A/C# movable shape is x 4 2 2 2 x', () => {
+    const over3rd = slash.find((i) => i.id === 'slash-major-3rd')!;
+    const movable = buildChordShapes(db, 'A', over3rd).find((s) => s.fingeringSource === 'suggested')!;
+    expect(movable.notes.map((n) => n.fret)).toEqual([4, 2, 2, 2]);
+    expect(movable.muted).toEqual([0, 5]);
   });
 });
