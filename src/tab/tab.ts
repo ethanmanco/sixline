@@ -11,7 +11,8 @@ export interface TabOptions {
 
 /** One column of tab: which frets sound together, per string. */
 export interface TabColumn {
-  frets: (number | null)[];
+  /** Fret per string, 'x' for a muted string in a chord, null for nothing. */
+  frets: (number | 'x' | null)[];
   /** Index into shape.notes for each string, so playback can highlight it. */
   noteIndex: (number | null)[];
   shift: boolean;
@@ -25,6 +26,7 @@ export function tabColumns(shape: Shape): TabColumn[] {
       col.frets[n.string] = n.fret;
       col.noteIndex[n.string] = i;
     });
+    for (const s of shape.muted ?? []) col.frets[s] = 'x';
     return [col];
   }
   return shape.notes.map((n, i) => {
@@ -42,10 +44,12 @@ export function tabText(shape: Shape): string {
   for (const n of shape.notes) {
     byString.set(n.string, [...(byString.get(n.string) ?? []), n.fret]);
   }
+  for (const s of shape.muted ?? []) byString.set(s, []);
   const lines = [...byString.entries()]
     .sort((a, b) => a[0] - b[0])
-    .map(([s, frets]) => `${STRING_NAMES[s]} string: ${frets.join(', ')}`);
-  return `Tab. ${lines.join('. ')}.`;
+    .map(([s, frets]) => `${STRING_NAMES[s]} string: ${frets.length ? frets.join(', ') : 'muted'}`);
+  const lead = shape.kind === 'chord' ? 'Tab, played together' : 'Tab';
+  return `${lead}. ${lines.join('. ')}.`;
 }
 
 /** Plain-text tab, the way it would be typed. High e on top. */
@@ -71,9 +75,10 @@ export function tabAscii(shape: Shape): string {
 export function renderTab(shape: Shape, opts: TabOptions = {}): { el: SVGSVGElement; highlight: (i: number | null) => void } {
   const size = opts.size ?? 'mini';
   const letters = opts.letters ?? size === 'full';
-  const gap = size === 'mini' ? 8 : 13;
-  const colW = size === 'mini' ? 15 : 24;
-  const font = size === 'mini' ? 10 : 13;
+  const gap = size === 'mini' ? 9.5 : 14;
+  // A chord is a single column, so give it room to read as a tab snippet.
+  const colW = shape.kind === 'chord' ? (size === 'mini' ? 40 : 56) : size === 'mini' ? 15 : 24;
+  const font = size === 'mini' ? 9.5 : 13;
   const left = letters ? (size === 'mini' ? 12 : 22) : 4;
   const cols = tabColumns(shape);
   const width = left + 6 + cols.length * colW + 6;
@@ -120,7 +125,7 @@ export function renderTab(shape: Shape, opts: TabOptions = {}): { el: SVGSVGElem
       el(
         'text',
         {
-          class: `tab__n${c.shift ? ' tab__n--shift' : ''}`,
+          class: `tab__n${c.shift ? ' tab__n--shift' : ''}${f === 'x' ? ' tab__n--x' : ''}`,
           x: xOf(i),
           y,
           'font-size': font,

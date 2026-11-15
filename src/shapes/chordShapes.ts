@@ -3,7 +3,7 @@ import { CHORD_DESCRIPTIONS } from '../content/descriptions';
 import { dbPositions, sameFrets, toVoicing, type ChordDb, type Voicing } from '../chords/db';
 import { movableVoicing } from '../chords/movable';
 import { CHORD_TYPES, spellChord, type ChordSpelling, type ChordType } from '../theory/chords';
-import { MAX_FRET, OPEN_MIDI, STRING_NAMES, chromaOf } from '../theory/guitar';
+import { MAX_FRET, OPEN_MIDI, STRING_NAMES, chromaOf, stringName } from '../theory/guitar';
 import { noteChroma } from '../theory/spelling';
 
 export type ChordGroup = 'open' | 'barre' | 'power' | 'seventh' | 'sus';
@@ -111,7 +111,7 @@ function lowestFretted(v: Voicing): number {
 }
 
 function listNames(strings: number[]): string {
-  const names = strings.map((s) => STRING_NAMES[s]);
+  const names = strings.map((s) => stringName(s));
   if (names.length === 1) return `the ${names[0]} string`;
   return `the ${names.slice(0, -1).join(', ')} and ${names[names.length - 1]} strings`;
 }
@@ -121,7 +121,7 @@ export function describeVoicing(v: Voicing, fromDb: boolean): string {
   const parts: string[] = [];
   for (const b of v.barres) {
     parts.push(
-      `Lay finger ${b.finger} flat across fret ${b.fret}, from the ${STRING_NAMES[b.from]} string to the ${STRING_NAMES[b.to]} string.`,
+      `Lay finger ${b.finger} flat across fret ${b.fret}, from the ${stringName(b.from)} string to the ${stringName(b.to)} string.`,
     );
   }
   const muted = v.frets.map((f, s) => (f === null ? s : -1)).filter((s) => s >= 0);

@@ -2,7 +2,7 @@ import type { FretNote, FretPos, Shape } from '../core/types';
 import { SCALE_DESCRIPTIONS } from '../content/descriptions';
 import { assignFingers } from '../fingering/fingers';
 import { pentatonicBoxes } from '../fingering/positions';
-import { midiAt, chromaOf, STRING_NAMES } from '../theory/guitar';
+import { midiAt, chromaOf, STRING_NAMES, stringName } from '../theory/guitar';
 import { spellScale, type ScaleSpelling, type ScaleType } from '../theory/scales';
 import { noteChroma } from '../theory/spelling';
 
@@ -38,7 +38,7 @@ export function describeHand(notes: readonly FretNote[], lo: number): string {
   if (hasOpen) parts.push('Open strings ring with no finger.');
   if (shifts.length > 0) {
     const where = shifts
-      .map((n) => `${STRING_NAMES[n.string]} string fret ${n.fret} (${n.shift === 'up' ? 'pinky reaches up' : 'index reaches back'})`)
+      .map((n) => `${stringName(n.string)} string fret ${n.fret} (${n.shift === 'up' ? 'pinky reaches up' : 'index reaches back'})`)
       .join(', ');
     parts.push(`Shift your hand one fret for ${where}.`);
   }

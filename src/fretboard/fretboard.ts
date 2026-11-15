@@ -33,7 +33,8 @@ export class Fretboard {
   private focusPos: FretPos = { string: 0, fret: 0 };
   /** Visual (row, col) of every cell, for arrow-key moves. */
   private visual = new Map<string, FretPos>();
-  private sounding: HTMLElement | null = null;
+  private sounding: HTMLElement[] = [];
+  private barreEls: HTMLElement[] = [];
   private opts: FretboardOptions;
 
   constructor(opts: FretboardOptions = {}) {
@@ -69,6 +70,7 @@ export class Fretboard {
     if (shape && shape.notes.length > 0) {
       this.setFocus({ string: shape.notes[0].string, fret: shape.notes[0].fret }, false);
     }
+    this.buildBarres();
     this.paint();
   }
 
@@ -87,23 +89,19 @@ export class Fretboard {
     this.layout();
   }
 
-  /** Lights the dot for one note of the shape (by index), or clears it. */
-  highlight(index: number | null): void {
-    this.sounding?.classList.remove('is-sounding');
-    this.sounding = null;
-    if (index === null || !this.shape) return;
-    const n = this.shape.notes[index];
-    const cell = n && this.cells.get(key(n.string, n.fret));
-    if (cell) {
-      cell.classList.add('is-sounding');
-      this.sounding = cell;
+  /** Lights the dots for some notes of the shape (by index), or clears them. */
+  highlight(indices: readonly number[] | null): void {
+    for (const c of this.sounding) c.classList.remove('is-sounding');
+    this.sounding = [];
+    if (!indices || !this.shape) return;
+    for (const i of indices) {
+      const n = this.shape.notes[i];
+      const cell = n && this.cells.get(key(n.string, n.fret));
+      if (cell) {
+        cell.classList.add('is-sounding');
+        this.sounding.push(cell);
+      }
     }
-  }
-
-  /** Lights several dots at once, e.g. a strummed chord. */
-  highlightAll(on: boolean): void {
-    this.highlight(null);
-    this.el.classList.toggle('is-strumming', on);
   }
 
   // ---------------------------------------------------------------------------
@@ -171,13 +169,8 @@ export class Fretboard {
     for (let f = 1; f <= MAX_FRET; f++) tracks.push(`${Math.pow(0.955, f - 1).toFixed(3)}fr`);
     if (this.lefty && !vertical) tracks.reverse();
 
-    // Grid line of each fret along the neck axis, and of each string across it.
-    const fretLine = (f: number) => (this.lefty && !vertical ? MAX_FRET - f : f) + 1;
-    // Horizontal: high E on top (like tab). Vertical: low E on the left (like a chord chart).
-    const stringLine = (s: number) => {
-      if (!vertical) return 6 - s;
-      return (this.lefty ? 5 - s : s) + 2;
-    };
+    const fretLine = (f: number) => this.fretLine(f);
+    const stringLine = (s: number) => this.stringLine(s);
 
     if (vertical) {
       this.grid.style.gridTemplateColumns = 'var(--fb-num) repeat(6, minmax(var(--fb-string-min), 1fr))';
@@ -220,6 +213,48 @@ export class Fretboard {
         d.style.gridColumn = vertical ? '2 / 8' : String(line);
       }
     }
+    this.placeBarres();
+  }
+
+  /** Grid line of a fret along the neck axis. */
+  private fretLine(f: number): number {
+    const vertical = this.orientation === 'vertical';
+    return (this.lefty && !vertical ? MAX_FRET - f : f) + 1;
+  }
+
+  /** Grid line of a string across the neck. Horizontal: high E on top, like tab. Vertical: low E on the left, like a chord chart. */
+  private stringLine(s: number): number {
+    if (this.orientation !== 'vertical') return 6 - s;
+    return (this.lefty ? 5 - s : s) + 2;
+  }
+
+  /** Draws a bar under the dots for each barre in the shape. */
+  private buildBarres(): void {
+    for (const el of this.barreEls) el.remove();
+    this.barreEls = (this.shape?.barres ?? []).map((b) => {
+      const el = document.createElement('div');
+      el.className = 'fb__barre';
+      el.setAttribute('aria-hidden', 'true');
+      el.dataset.fret = String(b.fret);
+      el.dataset.from = String(b.from);
+      el.dataset.to = String(b.to);
+      this.grid.insertBefore(el, this.grid.querySelector('.fb__row'));
+      return el;
+    });
+    this.placeBarres();
+  }
+
+  private placeBarres(): void {
+    const vertical = this.orientation === 'vertical';
+    for (const el of this.barreEls) {
+      const f = this.fretLine(Number(el.dataset.fret));
+      const a = this.stringLine(Number(el.dataset.from));
+      const b = this.stringLine(Number(el.dataset.to));
+      const across = `${Math.min(a, b)} / ${Math.max(a, b) + 1}`;
+      el.style.setProperty('--span', String(Math.abs(a - b) + 1));
+      el.style.gridRow = vertical ? String(f) : across;
+      el.style.gridColumn = vertical ? across : String(f);
+    }
   }
 
   /** Updates dots, labels, and accessible names. */
@@ -230,15 +265,16 @@ export class Fretboard {
       const note = idx !== undefined && this.shape ? this.shape.notes[idx] : null;
       const midi = midiAt(pos);
       const name = note?.note ?? this.opts.spell?.(midi) ?? '';
+      const muted = pos.fret === 0 && !!this.shape?.muted?.includes(pos.string);
 
+      cell.classList.toggle('is-muted', muted);
       cell.classList.toggle('has-note', !!note);
       cell.classList.toggle('is-root', !!note?.isRoot);
       cell.classList.toggle('is-shift', !!note?.shift);
       const label = cell.querySelector<HTMLElement>('.fb__label')!;
-      label.textContent = note ? this.labelFor(note) : '';
-      cell.querySelector<HTMLElement>('.fb__dot')!.dataset.label = label.textContent;
+      label.textContent = note ? this.labelFor(note) : muted ? '×' : '';
 
-      cell.setAttribute('aria-label', this.ariaFor(pos, name, note));
+      cell.setAttribute('aria-label', this.ariaFor(pos, name, note) + (muted ? ', muted, do not play this string' : ''));
     }
   }
 
@@ -293,12 +329,12 @@ export class Fretboard {
       cell.classList.add('is-tapped');
       window.setTimeout(() => {
         cell.classList.remove('is-tapped');
-        if (!cell.classList.contains('has-note')) label.textContent = '';
+        if (!cell.classList.contains('has-note')) label.textContent = cell.classList.contains('is-muted') ? '×' : '';
       }, 700);
     } else {
       cell.classList.add('is-sounding');
       window.setTimeout(() => {
-        if (this.sounding !== cell) cell.classList.remove('is-sounding');
+        if (!this.sounding.includes(cell)) cell.classList.remove('is-sounding');
       }, 450);
     }
     this.opts.onActivate?.(pos, midiAt(pos), note);

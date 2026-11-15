@@ -406,6 +406,33 @@ main:focus {
   background: var(--inlay);
 }
 
+.fb__barre {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+.fb__barre::before {
+  content: '';
+  position: absolute;
+  background: var(--dot);
+  opacity: 0.28;
+  border-radius: 999px;
+}
+.fb--horizontal .fb__barre::before {
+  left: 50%;
+  width: calc(var(--dot-size) * 0.62);
+  transform: translateX(-50%);
+  top: calc(100% / var(--span) / 2 - var(--dot-size) / 2);
+  bottom: calc(100% / var(--span) / 2 - var(--dot-size) / 2);
+}
+.fb--vertical .fb__barre::before {
+  top: 50%;
+  height: calc(var(--dot-size) * 0.62);
+  transform: translateY(-50%);
+  left: calc(100% / var(--span) / 2 - var(--dot-size) / 2);
+  right: calc(100% / var(--span) / 2 - var(--dot-size) / 2);
+}
+
 .fb__num {
   font: 500 11px/1 var(--font-mono);
   color: var(--ink-3);
@@ -541,8 +568,17 @@ main:focus {
   background: var(--ghost);
   color: var(--dot-ink);
 }
-.fb__cell.is-sounding .fb__dot,
-.fb.is-strumming .fb__cell.has-note .fb__dot {
+.fb__cell.is-muted .fb__dot {
+  opacity: 1;
+  transform: scale(0.85);
+  background: transparent;
+  color: var(--ink-2);
+}
+.fb__cell.is-muted .fb__label {
+  font-size: 18px;
+  font-weight: 500;
+}
+.fb__cell.is-sounding .fb__dot {
   background: var(--accent-strong);
   color: var(--accent-ink);
   transform: scale(1.22);
@@ -826,4 +862,39 @@ main:focus {
     animation: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+.tab__n--x {
+  fill: var(--ink-3);
+  font-weight: 500;
+}
+
+.items__group {
+  font: 600 16px/1.2 var(--font-display);
+  margin: 18px 0 8px;
+}
+.items__group:first-child {
+  margin-top: 0;
+}
+.item__none {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.loading,
+.detail__empty {
+  color: var(--ink-2);
+}
+.detail__symbol {
+  font: 600 0.62em/1 var(--font-mono);
+  color: var(--ink-3);
+  margin-left: 6px;
+  vertical-align: 0.12em;
+}
+
+/* Chords: one-column tab sits beside the name to keep the list short. */
+.items--chords .item {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 8px 14px;
 }

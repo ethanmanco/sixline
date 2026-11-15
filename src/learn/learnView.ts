@@ -3,7 +3,7 @@ import type { Route } from '../app/router';
 import { href } from '../app/router';
 import type { Shape } from '../core/types';
 import { renderTab, tabAscii } from '../tab/tab';
-import { CATEGORIES, itemsIn, type CategoryId } from './catalog';
+import { CATEGORIES, itemsIn, type CatalogItem, type Category } from './catalog';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
@@ -14,6 +14,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 export class LearnView {
   readonly el: HTMLElement;
   private unStep: (() => void) | null = null;
+  private renderToken = 0;
 
   constructor(private stage: Stage) {
     this.el = document.createElement('section');
@@ -21,69 +22,123 @@ export class LearnView {
     this.el.setAttribute('aria-labelledby', 'learn-title');
   }
 
-  render(route: Route, root: string): void {
-    const category = (CATEGORIES.find((c) => c.id === route.category && c.ready)?.id ?? 'scales') as CategoryId;
-    const items = itemsIn(category);
-    const item = items.find((i) => i.id === route.item) ?? items[0];
-    const shapes = item.build(root);
-    const posParam = Number(route.params.get('pos') ?? '1');
-    const shape = shapes[Math.min(Math.max(1, posParam), shapes.length) - 1];
-
-    this.stage.setRoot(root);
-    this.stage.setShape(shape);
+  async render(route: Route, root: string): Promise<void> {
+    const token = ++this.renderToken;
+    const category = CATEGORIES.find((c) => c.id === route.category && c.ready) ?? CATEGORIES.find((c) => c.id === 'scales')!;
 
     this.el.innerHTML = `
       <h1 id="learn-title" class="visually-hidden">Learn</h1>
       <nav class="cats" aria-label="Learn categories">
         ${CATEGORIES.map((c) =>
           c.ready
-            ? `<a class="cats__tab" href="${href(['learn', c.id])}" ${c.id === category ? 'aria-current="page"' : ''}>${c.label}</a>`
+            ? `<a class="cats__tab" href="${href(['learn', c.id])}" ${c.id === category.id ? 'aria-current="page"' : ''}>${c.label}</a>`
             : `<span class="cats__tab cats__tab--soon" aria-disabled="true">${c.label}<small>soon</small></span>`,
         ).join('')}
       </nav>
       <div class="learn__body">
         <div class="items-wrap">
-          <h2 class="items__title">${esc(CATEGORIES.find((c) => c.id === category)!.label)} in ${esc(root)}</h2>
-          <ul class="items" role="list"></ul>
+          <h2 class="items__title">${esc(category.label)} in ${esc(root)}</h2>
+          <div class="items-groups"><p class="loading">Loading...</p></div>
         </div>
         <article class="detail" aria-labelledby="detail-title"></article>
       </div>`;
 
-    const list = this.el.querySelector<HTMLUListElement>('.items')!;
-    for (const it of items) {
-      const preview = it.build(root)[0];
-      const li = document.createElement('li');
-      const a = document.createElement('a');
-      a.className = 'item';
-      a.href = href(['learn', category, it.id]);
-      if (it.id === item.id) a.setAttribute('aria-current', 'true');
-      a.innerHTML = `<span class="item__name">${esc(root)} ${esc(it.label.toLowerCase())}</span>`;
-      const tab = renderTab(preview, { size: 'mini' });
-      tab.el.setAttribute('aria-hidden', 'true');
-      tab.el.removeAttribute('role');
-      a.append(tab.el);
-      li.append(a);
-      list.append(li);
+    if (category.prepare && !category.isPrepared?.()) {
+      try {
+        await category.prepare();
+      } catch {
+        if (token === this.renderToken) {
+          this.el.querySelector('.items-groups')!.innerHTML = '<p class="loading">Could not load this section. Check your connection and reload.</p>';
+        }
+        return;
+      }
+      if (token !== this.renderToken) return;
     }
 
-    this.renderDetail(shape, shapes, category, item.id);
+    const items = itemsIn(category.id);
+    const item = items.find((i) => i.id === route.item) ?? items[0];
+    const shapes = item.build(root);
+    const posParam = Number(route.params.get('pos') ?? '1');
+    const shape = shapes.length ? shapes[Math.min(Math.max(1, posParam), shapes.length) - 1] : null;
+
+    this.stage.setRoot(root);
+    this.stage.setShape(shape);
+    this.renderList(category, items, item, root);
+    if (shape) this.renderDetail(shape, shapes, category, item);
+    else this.renderEmpty(category, item, root);
   }
 
-  private renderDetail(shape: Shape, all: Shape[], category: CategoryId, itemId: string): void {
+  private renderList(category: Category, items: CatalogItem[], current: CatalogItem, root: string): void {
+    const wrap = this.el.querySelector<HTMLElement>('.items-groups')!;
+    wrap.innerHTML = '';
+    const groups = category.groups ?? [{ id: '', label: '' }];
+    for (const g of groups) {
+      const inGroup = items.filter((i) => (g.id ? i.group === g.id : true));
+      if (!inGroup.length) continue;
+      if (g.label) {
+        const h = document.createElement('h3');
+        h.className = 'items__group';
+        h.textContent = g.label;
+        wrap.append(h);
+      }
+      const list = document.createElement('ul');
+      list.className = `items items--${category.id}`;
+      list.setAttribute('role', 'list');
+      for (const it of inGroup) {
+        const preview = it.build(root)[0];
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.className = 'item';
+        a.href = href(['learn', category.id, it.id]);
+        if (it.id === current.id) a.setAttribute('aria-current', 'true');
+        a.innerHTML = `<span class="item__name">${esc(it.label(root))}</span>`;
+        if (preview) {
+          const tab = renderTab(preview, { size: 'mini' });
+          tab.el.setAttribute('aria-hidden', 'true');
+          tab.el.removeAttribute('role');
+          a.append(tab.el);
+        } else {
+          a.insertAdjacentHTML('beforeend', '<span class="item__none">No open shape in this key</span>');
+        }
+        li.append(a);
+        list.append(li);
+      }
+      wrap.append(list);
+    }
+  }
+
+  private renderEmpty(category: Category, item: CatalogItem, root: string): void {
+    const d = this.el.querySelector<HTMLElement>('.detail')!;
+    const fb = item.fallback;
+    d.innerHTML = `
+      <header class="detail__head"><h2 id="detail-title">${esc(item.label(root))}</h2></header>
+      <p class="detail__empty">${esc(fb ? fb.text(root) : 'There is no shape for this in the current key.')}</p>
+      ${fb ? `<p><a class="btn" href="${href(['learn', category.id, fb.itemId])}">Show the movable version</a></p>` : ''}`;
+    this.unStep?.();
+    this.unStep = null;
+  }
+
+  private renderDetail(shape: Shape, all: Shape[], category: Category, item: CatalogItem): void {
     const d = this.el.querySelector<HTMLElement>('.detail')!;
     const pos = shape.position;
+    const isChord = shape.kind === 'chord';
+    const unit = isChord ? 'Voicing' : 'Position';
+    const sub =
+      shape.subtitle ??
+      (pos ? `Position ${pos.index} of ${pos.count}, starting at fret ${pos.startFret}` : '');
+    const fingerLabel = shape.fingeringSource === 'chords-db' ? 'Fingering' : 'Suggested fingering';
     d.innerHTML = `
       <header class="detail__head">
-        <h2 id="detail-title">${esc(shape.name)}</h2>
-        ${pos ? `<p class="detail__sub">Position ${pos.index} of ${pos.count}, starting at fret ${pos.startFret}</p>` : ''}
+        <h2 id="detail-title">${esc(shape.name)}${shape.symbol && shape.symbol !== shape.name ? ` <span class="detail__symbol">${esc(shape.symbol)}</span>` : ''}</h2>
+        ${sub ? `<p class="detail__sub">${esc(sub)}</p>` : ''}
       </header>
       ${
         all.length > 1
-          ? `<nav class="positions" aria-label="Positions">
+          ? `<nav class="positions" aria-label="${unit}s">
               ${all
                 .map(
                   (s, i) =>
-                    `<a class="positions__btn" href="${href(['learn', category, itemId], { pos: i + 1 })}" ${s === shape ? 'aria-current="true"' : ''} aria-label="Position ${i + 1}, fret ${s.position?.startFret}">${i + 1}</a>`,
+                    `<a class="positions__btn" href="${href(['learn', category.id, item.id], { pos: i + 1 })}" ${s === shape ? 'aria-current="true"' : ''} aria-label="${unit} ${i + 1}, ${s.position?.startFret ? `fret ${s.position.startFret}` : 'open'}">${i + 1}</a>`,
                 )
                 .join('')}
             </nav>`
@@ -92,7 +147,7 @@ export class LearnView {
       <dl class="facts">
         <div><dt>Notes</dt><dd class="facts__chips">${shape.info.noteNames.map((n, i) => `<span class="chip${i === 0 ? ' chip--root' : ''}">${esc(n)}</span>`).join('')}</dd></div>
         <div><dt>Intervals</dt><dd class="facts__chips">${shape.info.intervals.map((n, i) => `<span class="chip${i === 0 ? ' chip--root' : ''}">${esc(n)}</span>`).join('')}</dd></div>
-        <div><dt>${shape.fingeringSource === 'suggested' ? 'Suggested fingering' : 'Fingering'}</dt><dd>${esc(shape.info.fingeringNote ?? '')}</dd></div>
+        <div><dt>${fingerLabel}</dt><dd>${esc(shape.info.fingeringNote ?? '')}</dd></div>
       </dl>
       <div class="detail__tab" data-tab></div>
       <details class="ascii">
@@ -109,6 +164,6 @@ export class LearnView {
     const tab = renderTab(shape, { size: 'full' });
     d.querySelector('[data-tab]')!.append(tab.el);
     this.unStep?.();
-    this.unStep = this.stage.onStep((i) => tab.highlight(i));
+    this.unStep = this.stage.onStep((ids) => tab.highlight(ids?.[0] ?? null));
   }
 }

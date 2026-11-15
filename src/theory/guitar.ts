@@ -8,6 +8,11 @@ export const MAX_FRET = 15;
 /** Spoken names used in accessible labels. */
 export const STRING_NAMES: readonly string[] = ['Low E', 'A', 'D', 'G', 'B', 'High E'];
 
+/** String name for use mid-sentence: "low E", "A", "high E". */
+export function stringName(s: number): string {
+  return STRING_NAMES[s].replace(/^(Low|High) /, (m) => m.toLowerCase());
+}
+
 /** Letters printed at the left of a tab staff. */
 export const TAB_LETTERS: readonly string[] = ['E', 'A', 'D', 'G', 'B', 'e'];
 

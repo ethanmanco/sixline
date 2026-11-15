@@ -22,7 +22,7 @@ export class Stage {
   private root = 'A';
   private playBtn: HTMLButtonElement;
   private status: HTMLElement;
-  private stepListeners = new Set<(i: number | null) => void>();
+  private stepListeners = new Set<(indices: number[] | null) => void>();
 
   constructor() {
     this.fretboard = new Fretboard({
@@ -112,14 +112,15 @@ export class Stage {
     this.playBtn.setAttribute('aria-label', shape ? `Play ${this.describe(shape)}` : 'Play');
   }
 
-  /** Get told which note is sounding, e.g. to light up a tab column. */
-  onStep(fn: (i: number | null) => void): () => void {
+  /** Get told which notes are sounding, e.g. to light up a tab column. */
+  onStep(fn: (indices: number[] | null) => void): () => void {
     this.stepListeners.add(fn);
     return () => this.stepListeners.delete(fn);
   }
 
   private describe(s: Shape): string {
-    return s.position ? `${s.name}, position ${s.position.index}` : s.name;
+    if (!s.position || s.position.count < 2) return s.name;
+    return `${s.name}, ${s.kind === 'chord' ? 'voicing' : 'position'} ${s.position.index}`;
   }
 
   private async togglePlay(): Promise<void> {
@@ -129,28 +130,20 @@ export class Stage {
     }
     const shape = this.shape;
     if (!shape) return;
+    const all = shape.notes.map((_, i) => i);
+    // Each step lists the shape's note indexes that sound together.
+    const order: number[][] =
+      shape.kind === 'chord'
+        ? // Pick each string low to high, then strum the whole chord.
+          [...all.map((i) => [i]), all]
+        : // Up the shape and back down again.
+          [...all, ...all.slice(0, -1).reverse()].map((i) => [i]);
     this.setPlaying(true);
     try {
-      if (shape.kind === 'chord') {
-        await guitar.strum(
-          shape.notes.map((n) => n.midi),
-          {
-            onStart: () => this.fretboard.highlightAll(true),
-            onEnd: () => {
-              this.fretboard.highlightAll(false);
-              this.setPlaying(false);
-            },
-          },
-        );
-        return;
-      }
-      // Up the shape and back down again.
-      const up = shape.notes.map((_, i) => i);
-      const order = [...up, ...up.slice(0, -1).reverse()];
       await guitar.sequence(
-        order.map((i) => shape.notes[i].midi),
+        order.map((ids) => (ids.length === 1 ? shape.notes[ids[0]].midi : ids.map((i) => shape.notes[i].midi))),
         {
-          step: 0.3,
+          step: shape.kind === 'chord' ? 0.26 : 0.3,
           onNote: (k) => this.step(order[k]),
           onEnd: () => {
             this.step(null);
@@ -164,9 +157,9 @@ export class Stage {
     }
   }
 
-  private step(i: number | null): void {
-    this.fretboard.highlight(i);
-    for (const fn of this.stepListeners) fn(i);
+  private step(indices: number[] | null): void {
+    this.fretboard.highlight(indices);
+    for (const fn of this.stepListeners) fn(indices);
   }
 
   private setPlaying(on: boolean): void {

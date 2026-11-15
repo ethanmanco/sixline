@@ -82,8 +82,11 @@ class GuitarSound {
     this.sampler?.triggerAttackRelease(Tone.Frequency(midi, 'midi').toFrequency(), duration);
   }
 
-  /** Plays notes one after another, with a callback in time with each note. */
-  async sequence(midis: readonly number[], opts: SequenceOptions = {}): Promise<void> {
+  /**
+   * Plays steps one after another, with a callback in time with each step.
+   * A step is one note, or several notes strummed low to high.
+   */
+  async sequence(steps: readonly (number | readonly number[])[], opts: SequenceOptions = {}): Promise<void> {
     await this.ensureReady();
     this.stop();
     const step = opts.step ?? 0.3;
@@ -99,15 +102,20 @@ class GuitarSound {
     };
     this.endCurrent = end;
 
-    midis.forEach((midi, i) => {
+    steps.forEach((notes, i) => {
+      const chord = typeof notes === 'number' ? [notes] : notes;
+      const last = i === steps.length - 1;
       transport.scheduleOnce((time) => {
-        sampler.triggerAttackRelease(Tone.Frequency(midi, 'midi').toFrequency(), step * 2.4, time);
+        chord.forEach((midi, k) => {
+          sampler.triggerAttackRelease(Tone.Frequency(midi, 'midi').toFrequency(), last ? 2.4 : step * 2.4, time + k * 0.035);
+        });
         draw.schedule(() => {
           if (!ended) opts.onNote?.(i);
         }, time);
       }, i * step);
     });
-    transport.scheduleOnce((time) => draw.schedule(end, time), midis.length * step + 0.1);
+    const tail = typeof steps[steps.length - 1] === 'number' ? 0.1 : 1.2;
+    transport.scheduleOnce((time) => draw.schedule(end, time), (steps.length - 1) * step + step + tail);
     transport.position = 0;
     transport.start('+0.05');
   }
