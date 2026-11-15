@@ -1,5 +1,7 @@
 import { LearnView } from '../learn/learnView';
-import { href, onRoute } from './router';
+import { KEYS, keyOptionLabel, normalizeKey } from '../theory/keys';
+import { href, onRoute, parseRoute } from './router';
+import { settings } from './settings';
 import { Stage } from './stage';
 
 const LOGO = `<svg class="brand__mark" viewBox="0 0 28 28" aria-hidden="true">
@@ -29,9 +31,30 @@ export function createApp(root: HTMLElement): void {
   const learn = new LearnView(stage);
   main.append(stage.el, learn.el);
 
+  // Key picker: lives next to Play, so it is always in reach.
+  const keyLabel = document.createElement('label');
+  keyLabel.className = 'keypick';
+  keyLabel.innerHTML = `<span class="keypick__text">Key</span>
+    <select class="keypick__select">
+      ${KEYS.map((k) => `<option value="${k}">${keyOptionLabel(k)}</option>`).join('')}
+    </select>`;
+  const select = keyLabel.querySelector('select')!;
+  stage.setKeyControl(keyLabel);
+  select.addEventListener('change', () => {
+    // Same page, new key. The position number is kept; it is clamped if the new key has fewer.
+    const route = parseRoute(location.hash);
+    const params: Record<string, string> = {};
+    route.params.forEach((v, k) => (params[k] = v));
+    params.key = select.value;
+    location.hash = href([route.section, route.category, route.item].filter((p): p is string => !!p), params);
+  });
+
   onRoute((route) => {
-    // Phase 1 ships only Learn. The key picker arrives in a later step.
-    const key = 'A';
+    // The link's key wins (so shared links open in the right key), then the last key used.
+    const fromLink = normalizeKey(route.params.get('key'));
+    const key = fromLink ?? settings.get().key;
+    if (fromLink && fromLink !== settings.get().key) settings.set({ key: fromLink });
+    select.value = key;
     learn.render(route, key);
   });
 }

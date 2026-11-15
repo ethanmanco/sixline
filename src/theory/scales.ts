@@ -54,18 +54,29 @@ export interface ScaleSpelling {
   degrees: string[];
 }
 
-const doubles = (notes: string[]) => notes.filter((n) => /bb|##/.test(n)).length;
+/**
+ * How hard a spelling is to read: double sharps and flats are worst, then Fb
+ * and Cb, then E# and B#, then any other sharp or flat.
+ */
+export function spellingCost(notes: readonly string[]): number {
+  return notes.reduce((cost, n) => {
+    if (/bb|##/.test(n)) return cost + 10;
+    if (/^(Fb|Cb)$/.test(n)) return cost + 4;
+    if (/^(E#|B#)$/.test(n)) return cost + 2;
+    return cost + (/[#b]/.test(n) ? 1 : 0);
+  }, 0);
+}
 
 /**
- * Picks the more readable of a root and its enharmonic twin. Db locrian would
- * need double flats (Ebb, Abb), so it is written as C# locrian instead.
+ * Picks the easier-to-read of a root and its enharmonic twin, but only when it
+ * is clearly easier, so the key as picked usually wins. Db dorian would need
+ * Fb and Cb, so it is written C# dorian; Dbm becomes C#m; Db major and F#maj7
+ * stay as they are.
  */
 export function readableRoot(root: string, spell: (r: string) => string[]): string {
-  const first = spell(root);
-  if (doubles(first) === 0) return root;
   const alt = Note.enharmonic(root);
   if (!alt || alt === root || /bb|##/.test(alt)) return root;
-  return doubles(spell(alt)) < doubles(first) ? alt : root;
+  return spellingCost(spell(alt)) < spellingCost(spell(root)) - 2 ? alt : root;
 }
 
 /** Generates a scale's notes and degrees in any key from tonal. Nothing is hand-typed. */

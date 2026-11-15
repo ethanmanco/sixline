@@ -27,7 +27,11 @@ describe('chord spelling in every key', () => {
       it(`${root}${type.symbol}`, () => {
         const f = FORMULAS[type.id];
         const s = spellChord(root, type);
-        expect(s.notes[0]).toBe(root);
+        // The root may be respelled for readability (Dbm is written C#m) but must sound the same.
+        expect(chromaOfName(s.notes[0])).toBe(chromaOfName(root));
+        expect(s.notes[0]).toBe(s.root);
+        // Readable: no double sharps or flats.
+        for (const n of s.notes) expect(n).not.toMatch(/bb|##/);
         expect(s.degrees).toEqual(f.degrees);
         const r = chromaOfName(root);
         expect(s.notes.map((n) => (chromaOfName(n) - r + 12) % 12)).toEqual(f.semis);

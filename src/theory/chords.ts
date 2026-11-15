@@ -1,4 +1,5 @@
 import { Chord } from 'tonal';
+import { readableRoot } from './scales';
 import { degreeLabel } from './spelling';
 
 export interface ChordType {
@@ -36,7 +37,8 @@ export interface ChordSpelling {
 }
 
 /** Notes and degrees of a chord in any key, from tonal. */
-export function spellChord(root: string, type: ChordType): ChordSpelling {
+export function spellChord(key: string, type: ChordType): ChordSpelling {
+  const root = readableRoot(key, (r) => Chord.get(`${r}${type.tonalSymbol}`).notes);
   const c = Chord.get(`${root}${type.tonalSymbol}`);
   if (c.empty) throw new Error(`tonal does not know ${root}${type.tonalSymbol}`);
   return {

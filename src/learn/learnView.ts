@@ -15,6 +15,12 @@ export class LearnView {
   readonly el: HTMLElement;
   private unStep: (() => void) | null = null;
   private renderToken = 0;
+  private key = 'A';
+
+  /** Link inside Learn that keeps the current key. */
+  private link(parts: string[], params: Record<string, string | number | undefined> = {}): string {
+    return href(['learn', ...parts], { key: this.key, ...params });
+  }
 
   constructor(private stage: Stage) {
     this.el = document.createElement('section');
@@ -24,6 +30,7 @@ export class LearnView {
 
   async render(route: Route, root: string): Promise<void> {
     const token = ++this.renderToken;
+    this.key = root;
     // Remember a focused picker chip so keyboard users keep their place after the re-render.
     const focusedPick = (document.activeElement as HTMLElement | null)?.dataset?.pick;
     const category = CATEGORIES.find((c) => c.id === route.category && c.ready) ?? CATEGORIES.find((c) => c.id === 'scales')!;
@@ -33,7 +40,7 @@ export class LearnView {
       <nav class="cats" aria-label="Learn categories">
         ${CATEGORIES.map((c) =>
           c.ready
-            ? `<a class="cats__tab" href="${href(['learn', c.id])}" ${c.id === category.id ? 'aria-current="page"' : ''}>${c.label}</a>`
+            ? `<a class="cats__tab" href="${this.link([c.id])}" ${c.id === category.id ? 'aria-current="page"' : ''}>${c.label}</a>`
             : `<span class="cats__tab cats__tab--soon" aria-disabled="true">${c.label}<small>soon</small></span>`,
         ).join('')}
       </nav>
@@ -91,7 +98,7 @@ export class LearnView {
       if (!inGroup.length) continue;
       html += `<div class="picker__group"><span class="picker__label" aria-hidden="true">${esc(g.short)}</span>`;
       for (const it of inGroup) {
-        html += `<a class="pick" data-pick="item:${it.id}" href="${href(['learn', category.id, it.id])}" aria-label="${esc(it.label(root))}" ${it.id === current.id ? 'aria-current="true"' : ''}>${esc(it.short(root))}</a>`;
+        html += `<a class="pick" data-pick="item:${it.id}" href="${this.link([category.id, it.id])}" aria-label="${esc(it.label(root))}" ${it.id === current.id ? 'aria-current="true"' : ''}>${esc(it.short(root))}</a>`;
       }
       html += '</div>';
     }
@@ -102,7 +109,7 @@ export class LearnView {
         const where = s.position?.startFret ? `fret ${s.position.startFret}` : 'open';
         const text = s.position ? String(i + 1) : 'Whole neck';
         const label = s.position ? `${unit} ${i + 1}, ${where}` : 'Whole neck, every note';
-        html += `<a class="pick${s.position ? ' pick--num' : ''}" data-pick="pos:${i + 1}" href="${href(['learn', category.id, current.id], { pos: i + 1 })}" aria-label="${label}" ${s === shape ? 'aria-current="true"' : ''}>${text}</a>`;
+        html += `<a class="pick${s.position ? ' pick--num' : ''}" data-pick="pos:${i + 1}" href="${this.link([category.id, current.id], { pos: i + 1 })}" aria-label="${label}" ${s === shape ? 'aria-current="true"' : ''}>${text}</a>`;
       });
       html += '</div>';
     }
@@ -132,7 +139,7 @@ export class LearnView {
         const li = document.createElement('li');
         const a = document.createElement('a');
         a.className = 'item';
-        a.href = href(['learn', category.id, it.id]);
+        a.href = this.link([category.id, it.id]);
         if (it.id === current.id) a.setAttribute('aria-current', 'true');
         a.innerHTML = `<span class="item__name">${esc(it.label(root))}</span>`;
         if (preview) {
@@ -155,8 +162,8 @@ export class LearnView {
     const fb = item.fallback;
     d.innerHTML = `
       <header class="detail__head"><h2 id="detail-title">${esc(item.label(root))}</h2></header>
-      <p class="detail__empty">${esc(fb ? fb.text(root) : 'There is no shape for this in the current key.')}</p>
-      ${fb ? `<p><a class="btn" href="${href(['learn', category.id, fb.itemId])}">Show the movable version</a></p>` : ''}`;
+      <p class="detail__empty">${esc(fb ? fb.text(item.label(root)) : 'There is no shape for this in the current key.')}</p>
+      ${fb ? `<p><a class="btn" href="${this.link([category.id, fb.itemId])}">Show the movable version</a></p>` : ''}`;
     this.unStep?.();
     this.unStep = null;
   }

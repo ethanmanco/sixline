@@ -219,7 +219,7 @@ export function buildChordShapes(db: ChordDb, root: string, item: ChordItem): Sh
       spelling,
       {
         id: `${item.id}-${i + 1}`,
-        name: item.label(root),
+        name: item.label(spelling.root),
         index: i + 1,
         count: voicings.length,
         fromDb: src,

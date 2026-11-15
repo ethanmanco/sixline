@@ -1,9 +1,10 @@
 import { chordDbIfLoaded, loadChordDb } from '../chords/db';
 import type { Shape } from '../core/types';
 import { CHORD_GROUPS, CHORD_ITEMS, buildChordShapes } from '../shapes/chordShapes';
-import { ARPEGGIO_GROUPS, ARPEGGIO_TYPES, buildArpeggioShapes } from '../shapes/arpeggioShapes';
+import { ARPEGGIO_GROUPS, ARPEGGIO_TYPES, buildArpeggioShapes, spellArpeggio } from '../shapes/arpeggioShapes';
 import { buildScaleShapes } from '../shapes/scaleShapes';
-import { SCALE_GROUPS, SCALE_TYPES } from '../theory/scales';
+import { spellChord } from '../theory/chords';
+import { SCALE_GROUPS, SCALE_TYPES, spellScale } from '../theory/scales';
 
 export type CategoryId = 'chords' | 'scales' | 'arpeggios';
 
@@ -42,22 +43,22 @@ export interface CatalogItem {
   short: (root: string) => string;
   /** Every position or voicing of this item in one key. May be empty. */
   build: (root: string) => Shape[];
-  /** Where to send people when this key has no such shape. */
-  fallback?: { itemId: string; text: (root: string) => string };
+  /** Where to send people when this key has no such shape. `text` gets the item's label, e.g. "C# minor". */
+  fallback?: { itemId: string; text: (label: string) => string };
 }
 
-const OPEN_FALLBACK: Record<string, { itemId: string; text: (root: string) => string }> = {
+const OPEN_FALLBACK: Record<string, { itemId: string; text: (label: string) => string }> = {
   'open-major': {
     itemId: 'barre-major-e',
-    text: (r) => `${r} major has no open shape in standard tuning. The barre version works in every key.`,
+    text: (l) => `${l} has no open shape in standard tuning. The barre version works in every key.`,
   },
   'open-minor': {
     itemId: 'barre-minor-e',
-    text: (r) => `${r} minor has no open shape in standard tuning. The barre version works in every key.`,
+    text: (l) => `${l} has no open shape in standard tuning. The barre version works in every key.`,
   },
   'open-7': {
     itemId: 'dom7',
-    text: (r) => `${r}7 has no open shape in standard tuning. Try one of the movable ${r}7 voicings.`,
+    text: (l) => `${l} has no open shape in standard tuning. Try one of the movable ${l} voicings.`,
   },
 };
 
@@ -67,8 +68,9 @@ export const ITEMS: readonly CatalogItem[] = [
       id: c.id,
       category: 'chords',
       group: c.group,
-      label: c.label,
-      short: c.short,
+      // Labels use the same root spelling as the shapes (C#m rather than Dbm).
+      label: (key) => c.label(spellChord(key, c.type).root),
+      short: (key) => c.short(spellChord(key, c.type).root),
       build: (root) => {
         const db = chordDbIfLoaded();
         if (!db) throw new Error('Chord data is not loaded yet');
@@ -82,7 +84,7 @@ export const ITEMS: readonly CatalogItem[] = [
       id: t.id,
       category: 'scales',
       group: t.group,
-      label: (root) => `${root} ${t.label.toLowerCase()}`,
+      label: (key) => `${spellScale(key, t).root} ${t.label.toLowerCase()}`,
       short: () => t.label,
       build: (root) => buildScaleShapes(root, t),
     }),
@@ -92,8 +94,8 @@ export const ITEMS: readonly CatalogItem[] = [
       id: t.id,
       category: 'arpeggios',
       group: t.group,
-      label: (root) => `${root} ${t.label.toLowerCase()}`,
-      short: (root) => `${root}${t.symbol}`,
+      label: (key) => `${spellArpeggio(key, t).root} ${t.label.toLowerCase()}`,
+      short: (key) => `${spellArpeggio(key, t).root}${t.symbol}`,
       build: (root) => buildArpeggioShapes(root, t),
     }),
   ),

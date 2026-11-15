@@ -47,6 +47,7 @@ export class Stage {
           <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path data-icon-play d="M4 2.5v11l9-5.5z"/><path data-icon-stop d="M3.5 3.5h9v9h-9z" hidden/></svg>
           <span data-play-text>Play</span>
         </button>
+        <div class="toolbar__key" data-key-slot></div>
         <fieldset class="seg" data-chord-play hidden>
           <legend class="seg__legend">How to play the chord</legend>
           ${CHORD_PLAY.map(
@@ -116,6 +117,11 @@ export class Stage {
     const orient = () => this.fretboard.setOrientation(portrait.matches ? 'vertical' : 'horizontal');
     portrait.addEventListener('change', orient);
     orient();
+  }
+
+  /** Puts a key picker (or any small control) next to the Play button. */
+  setKeyControl(el: HTMLElement): void {
+    this.el.querySelector('[data-key-slot]')!.replaceChildren(el);
   }
 
   setRoot(root: string): void {

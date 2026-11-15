@@ -67,6 +67,13 @@ describe('A minor pentatonic spelling', () => {
   it('matches the textbook notes', () => {
     expect(spellScale('A', scaleType('minor-pentatonic')).notes).toEqual(['A', 'C', 'D', 'E', 'G']);
   });
+  it('writes Db dorian as C# dorian, but keeps Db major and Eb minor', () => {
+    expect(spellScale('Db', scaleType('dorian')).root).toBe('C#');
+    expect(spellScale('Db', scaleType('major')).root).toBe('Db');
+    expect(spellScale('Eb', scaleType('natural-minor')).root).toBe('Eb');
+    expect(spellScale('F#', scaleType('major')).root).toBe('F#');
+  });
+
   it('spells Eb minor pentatonic with flats', () => {
     expect(spellScale('Eb', scaleType('minor-pentatonic')).notes).toEqual(['Eb', 'Gb', 'Ab', 'Bb', 'Db']);
   });

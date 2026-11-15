@@ -1,4 +1,5 @@
 import type { LabelMode } from '../core/types';
+import { normalizeKey } from '../theory/keys';
 
 export type ChordPlay = 'strum' | 'pick' | 'both';
 
@@ -8,10 +9,12 @@ export interface Settings {
   chordPlay: ChordPlay;
   lefty: boolean;
   showFretboard: boolean;
+  /** Last key picked, used when a link does not name one. */
+  key: string;
 }
 
 const STORAGE_KEY = 'sixline.settings.v1';
-const DEFAULTS: Settings = { labelMode: 'finger', chordPlay: 'both', lefty: false, showFretboard: true };
+const DEFAULTS: Settings = { labelMode: 'finger', chordPlay: 'both', lefty: false, showFretboard: true, key: 'A' };
 
 function load(): Settings {
   try {
@@ -27,6 +30,7 @@ function load(): Settings {
         : DEFAULTS.chordPlay,
       lefty: typeof parsed.lefty === 'boolean' ? parsed.lefty : DEFAULTS.lefty,
       showFretboard: typeof parsed.showFretboard === 'boolean' ? parsed.showFretboard : DEFAULTS.showFretboard,
+      key: normalizeKey(parsed.key) ?? DEFAULTS.key,
     };
   } catch {
     return { ...DEFAULTS };
