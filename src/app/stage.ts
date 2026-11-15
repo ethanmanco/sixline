@@ -196,7 +196,7 @@ export class Stage {
     this.playBtn.disabled = !shape;
     this.playBtn.setAttribute('aria-label', shape ? `Play ${this.describe(shape)}` : 'Play');
     const chord = shape?.kind === 'chord';
-    this.el.querySelector<HTMLElement>('[data-chord-play]')!.hidden = !chord;
+    this.el.querySelector<HTMLElement>('[data-chord-play]')!.hidden = !chord || !!shape?.playSteps;
     this.el.querySelector('[data-legend-note]')!.textContent = shape?.kind === 'scale' ? 'Scale note' : 'Chord tone';
     this.el.querySelector<HTMLElement>('[data-legend-shift]')!.hidden = chord;
     this.el.querySelector<HTMLElement>('[data-legend-muted]')!.hidden = !shape?.muted?.length;
@@ -234,7 +234,10 @@ export class Stage {
     const all = shape.notes.map((_, i) => i);
     // Each step lists the shape's note indexes that sound together.
     let order: number[][];
-    if (shape.kind === 'chord') {
+    if (shape.playSteps) {
+      // A run of double stops: up the neck and back down, each pair together.
+      order = [...shape.playSteps, ...shape.playSteps.slice(0, -1).reverse()];
+    } else if (shape.kind === 'chord') {
       const picked = all.map((i) => [i]);
       const mode = settings.get().chordPlay;
       order = mode === 'strum' ? [all] : mode === 'pick' ? picked : [...picked, all];
@@ -250,7 +253,7 @@ export class Stage {
       await guitar.sequence(
         order.map((ids) => (ids.length === 1 ? shape.notes[ids[0]].midi : ids.map((i) => shape.notes[i].midi))),
         {
-          step: shape.kind === 'chord' ? 0.26 : shape.playOrder ? 0.22 : 0.3,
+          step: shape.playSteps ? 0.42 : shape.kind === 'chord' ? 0.26 : shape.playOrder ? 0.22 : 0.3,
           onNote: (k) => this.step(order[k]),
           onEnd: () => {
             this.step(null);

@@ -63,9 +63,14 @@ export interface Shape {
   notes: FretNote[];
   /** Note indexes to play, when not simply up and back down (e.g. the whole-neck view plays each pitch once). */
   playOrder?: number[];
+  /** Notes that sound together, step by step (e.g. a run of double stops). Overrides playOrder. */
+  playSteps?: number[][];
   muted?: StringIndex[];
   barres?: Barre[];
-  position?: { index: number; count: number; startFret: number };
+  /** `label` replaces the number on the picker button, e.g. "Root" or "1st" for triad inversions. */
+  position?: { index: number; count: number; startFret: number; label?: string };
+  /** What the picker calls the positions, e.g. "Inversion" or "Strings". Defaults to Position or Voicing. */
+  positionUnit?: string;
   fingeringSource: 'chords-db' | 'suggested';
   info: ShapeInfo;
 }

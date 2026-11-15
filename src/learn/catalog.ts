@@ -5,8 +5,10 @@ import { ARPEGGIO_GROUPS, ARPEGGIO_TYPES, buildArpeggioShapes, spellArpeggio } f
 import { buildScaleShapes } from '../shapes/scaleShapes';
 import { spellChord } from '../theory/chords';
 import { SCALE_GROUPS, SCALE_TYPES, spellScale } from '../theory/scales';
+import { STRING_SETS, TRIAD_TYPES, buildTriadShapes } from '../shapes/triadShapes';
+import { INTERVAL_TYPES, RUN_TYPES, buildIntervalShapes, buildRunShapes } from '../shapes/intervalShapes';
 
-export type CategoryId = 'chords' | 'scales' | 'arpeggios';
+export type CategoryId = 'chords' | 'scales' | 'arpeggios' | 'triads' | 'intervals';
 
 export interface Category {
   id: CategoryId;
@@ -31,6 +33,21 @@ export const CATEGORIES: readonly Category[] = [
   },
   { id: 'scales', label: 'Scales', ready: true, groups: SCALE_GROUPS },
   { id: 'arpeggios', label: 'Arpeggios', ready: true, groups: ARPEGGIO_GROUPS },
+  {
+    id: 'triads',
+    label: 'Triads',
+    ready: true,
+    groups: STRING_SETS.map((s) => ({ id: s.id, label: s.label, short: s.short })),
+  },
+  {
+    id: 'intervals',
+    label: 'Intervals',
+    ready: true,
+    groups: [
+      { id: 'shapes', label: 'Interval shapes', short: 'Shapes' },
+      { id: 'runs', label: 'Double stops in the key', short: 'Double stops' },
+    ],
+  },
 ];
 
 export interface CatalogItem {
@@ -87,6 +104,39 @@ export const ITEMS: readonly CatalogItem[] = [
       label: (key) => `${spellScale(key, t).root} ${t.label.toLowerCase()}`,
       short: () => t.label,
       build: (root) => buildScaleShapes(root, t),
+    }),
+  ),
+  // Triads: one item per type on each string set; the positions are the three inversions.
+  ...STRING_SETS.flatMap((set) =>
+    TRIAD_TYPES.map(
+      (t): CatalogItem => ({
+        id: `${t.id}-${set.id}`,
+        category: 'triads',
+        group: set.id,
+        label: (key) => `${spellChord(key, t).root} ${t.label} triad, ${set.short}`,
+        short: (key) => spellChord(key, t).name,
+        build: (key) => buildTriadShapes(key, t, set),
+      }),
+    ),
+  ),
+  ...INTERVAL_TYPES.map(
+    (t): CatalogItem => ({
+      id: t.id,
+      category: 'intervals',
+      group: 'shapes',
+      label: () => t.label,
+      short: () => t.label,
+      build: (key) => buildIntervalShapes(key, t),
+    }),
+  ),
+  ...RUN_TYPES.map(
+    (r): CatalogItem => ({
+      id: r.id,
+      category: 'intervals',
+      group: 'runs',
+      label: () => r.label.replace(/^./, (c) => c.toUpperCase()),
+      short: () => r.short,
+      build: (key) => buildRunShapes(key, r),
     }),
   ),
   ...ARPEGGIO_TYPES.map(

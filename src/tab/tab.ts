@@ -20,6 +20,18 @@ export interface TabColumn {
 
 /** Chords stack into one column; scales and arpeggios get one column per note. */
 export function tabColumns(shape: Shape): TabColumn[] {
+  if (shape.playSteps) {
+    // Double stops: one column per pair, both notes stacked.
+    return shape.playSteps.map((ids) => {
+      const col: TabColumn = { frets: Array(6).fill(null), noteIndex: Array(6).fill(null), shift: false };
+      for (const i of ids) {
+        const n = shape.notes[i];
+        col.frets[n.string] = n.fret;
+        col.noteIndex[n.string] = i;
+      }
+      return col;
+    });
+  }
   if (shape.kind === 'chord') {
     const col: TabColumn = { frets: Array(6).fill(null), noteIndex: Array(6).fill(null), shift: false };
     shape.notes.forEach((n, i) => {
@@ -77,7 +89,8 @@ export function renderTab(shape: Shape, opts: TabOptions = {}): { el: SVGSVGElem
   const letters = opts.letters ?? size === 'full';
   const gap = size === 'mini' ? 9.5 : 14;
   // A chord is a single column, so give it room to read as a tab snippet.
-  const colW = shape.kind === 'chord' ? (size === 'mini' ? 40 : 56) : size === 'mini' ? 15 : 24;
+  const single = shape.kind === 'chord' && !shape.playSteps;
+  const colW = single ? (size === 'mini' ? 40 : 56) : size === 'mini' ? 15 : 24;
   const font = size === 'mini' ? 9.5 : 13;
   const left = letters ? (size === 'mini' ? 12 : 22) : 4;
   const cols = tabColumns(shape);

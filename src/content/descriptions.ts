@@ -79,6 +79,76 @@ export const SCALE_DESCRIPTIONS: Record<string, Description> = {
   },
 };
 
+export const TRIAD_DESCRIPTIONS: Record<string, Description> = {
+  major: {
+    sound: 'Just the three notes of a major chord, packed onto three strings. Bright, clear, and light.',
+    useWhen: 'Fills and riffs, a second guitar part that sits above the band, and funk and reggae chops. Learn all three inversions to play any major chord anywhere on the neck.',
+  },
+  minor: {
+    sound: 'The three notes of a minor chord on three strings. Darker than major but still light and clean.',
+    useWhen: 'Melodic rhythm parts and soft fills. Moving between inversions gives a smooth line on top of the chords.',
+  },
+  dim: {
+    sound: 'Two minor thirds stacked. Small, tense, and unstable.',
+    useWhen: 'Quick passing chords between two triads a step apart, and the vii chord of a major key.',
+  },
+  aug: {
+    sound: 'Two major thirds stacked. Every inversion has the same shape, so it slides up four frets to the same notes.',
+    useWhen: 'Moments of suspense, and as a step between a major chord and the next chord up.',
+  },
+};
+
+export const INTERVAL_DESCRIPTIONS: Record<string, Description> = {
+  m3: {
+    sound: 'Three half steps. The sound at the heart of every minor chord: soft and a little sad.',
+    useWhen: 'Bluesy double stops and minor riffs. Bending or sliding into it is a classic move.',
+  },
+  M3: {
+    sound: 'Four half steps. The bright, happy sound at the heart of every major chord.',
+    useWhen: 'Sweet country and soul double stops, and harmonizing a melody a third above.',
+  },
+  P4: {
+    sound: 'Five half steps. Open and strong, a little hollow.',
+    useWhen: 'Blues and rock double stops. Most pairs of strings are a 4th apart, so it lies flat under one finger.',
+  },
+  TT: {
+    sound: 'Six half steps, exactly half an octave. Tense and edgy, it wants to move.',
+    useWhen: 'The heart of a dominant 7 chord, metal riffs, and blues tension right before a resolution.',
+  },
+  P5: {
+    sound: 'Seven half steps. Stable and powerful, neither major nor minor.',
+    useWhen: 'This is the power chord. Use it for rock riffs and to thicken a melody.',
+  },
+  m6: {
+    sound: 'Eight half steps. Bittersweet and a little dark.',
+    useWhen: 'Moody double stops with one string skipped, and minor-key fills.',
+  },
+  M6: {
+    sound: 'Nine half steps. Warm and sweet, a classic soul sound.',
+    useWhen: 'Soul and R&B fills, often slid into from one fret below, and country leads.',
+  },
+  P8: {
+    sound: 'The same note twelve half steps higher. Full and bold.',
+    useWhen: 'Jazz-style octave melodies and thick single-note lines. Mute the string in between.',
+  },
+  '3rds-be': {
+    sound: 'Pairs of notes a third apart, climbing the major scale. Sweet and singing.',
+    useWhen: 'Country and pop fills, harmonizing a melody, and intros that walk up the neck.',
+  },
+  '3rds-gb': {
+    sound: 'Pairs of 3rds a little lower and warmer than on the top strings.',
+    useWhen: 'Rhythm fills under a singer, and connecting chords with a harmonized line.',
+  },
+  '6ths-ge': {
+    sound: 'Pairs of notes a sixth apart with a string skipped. Warm, open, and soulful.',
+    useWhen: 'Soul, R&B, and country fills. Slide into each pair from one fret below for the classic sound.',
+  },
+  '6ths-db': {
+    sound: 'The same 6ths on a lower string pair. Fuller and darker.',
+    useWhen: 'Fills under a melody, and when the top strings are busy with a singer or another guitar.',
+  },
+};
+
 export const ARPEGGIO_DESCRIPTIONS: Record<string, Description> = {
   major: {
     sound: 'The three notes of a major chord, one at a time. Bright and strong.',

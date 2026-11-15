@@ -118,13 +118,14 @@ export class LearnView {
 
     const positionsHtml = () => {
       if (!shape || shapes.length < 2) return '';
-      const unit = shape.kind === 'chord' ? 'Voicing' : 'Position';
+      const unit = shape.positionUnit ?? (shape.kind === 'chord' ? 'Voicing' : 'Position');
       let html = `<div class="picker__group picker__group--pos"><span class="picker__label" aria-hidden="true">${unit}</span>`;
       shapes.forEach((sh, i) => {
         const where = sh.position?.startFret ? `fret ${sh.position.startFret}` : 'open';
-        const text = sh.position ? String(i + 1) : 'Whole neck';
-        const label = sh.position ? `${unit} ${i + 1}, ${where}` : 'Whole neck, every note';
-        html += `<a class="pick${sh.position ? ' pick--num' : ''}" data-pick="pos:${i + 1}" href="${this.link([category.id, current.id], { pos: i + 1 })}" aria-label="${label}" ${sh === shape ? 'aria-current="true"' : ''}>${text}</a>`;
+        const custom = sh.position?.label;
+        const text = sh.position ? (custom ?? String(i + 1)) : 'Whole neck';
+        const label = sh.position ? (custom ? `${custom}, ${sh.subtitle ?? where}` : `${unit} ${i + 1}, ${where}`) : 'Whole neck, every note';
+        html += `<a class="pick${sh.position && !custom ? ' pick--num' : ''}" data-pick="pos:${i + 1}" href="${this.link([category.id, current.id], { pos: i + 1 })}" aria-label="${label}" ${sh === shape ? 'aria-current="true"' : ''}>${text}</a>`;
       });
       return html + '</div>';
     };
