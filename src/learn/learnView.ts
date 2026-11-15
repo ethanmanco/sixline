@@ -177,7 +177,7 @@ export class LearnView {
     const fingerLabel = shape.fingeringSource === 'chords-db' ? 'Fingering' : 'Suggested fingering';
     d.innerHTML = `
       <header class="detail__head">
-        <h2 id="detail-title">${esc(shape.name)}${shape.symbol && shape.symbol !== shape.name ? ` <span class="detail__symbol">${esc(shape.symbol)}</span>` : ''}</h2>
+        <h2 id="detail-title">${esc(shape.name)}${shape.symbol && shape.symbol !== shape.name && shape.symbol !== shape.root ? ` <span class="detail__symbol">${esc(shape.symbol)}</span>` : ''}</h2>
         ${sub ? `<p class="detail__sub">${esc(sub)}</p>` : ''}
       </header>
       <dl class="facts">
