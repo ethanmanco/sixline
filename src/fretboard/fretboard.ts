@@ -281,7 +281,8 @@ export class Fretboard {
   private labelFor(n: FretNote): string {
     switch (this.labelMode) {
       case 'finger':
-        return n.finger === null ? '' : n.finger === 0 ? 'O' : String(n.finger);
+        // No fingering (e.g. the whole-neck view): show the note name instead.
+        return n.finger === null ? n.note : n.finger === 0 ? 'O' : String(n.finger);
       case 'note':
         return n.note;
       case 'degree':

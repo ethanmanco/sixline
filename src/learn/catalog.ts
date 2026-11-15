@@ -1,8 +1,9 @@
 import { chordDbIfLoaded, loadChordDb } from '../chords/db';
 import type { Shape } from '../core/types';
 import { CHORD_GROUPS, CHORD_ITEMS, buildChordShapes } from '../shapes/chordShapes';
+import { ARPEGGIO_GROUPS, ARPEGGIO_TYPES, buildArpeggioShapes } from '../shapes/arpeggioShapes';
 import { buildScaleShapes } from '../shapes/scaleShapes';
-import { SCALE_TYPES } from '../theory/scales';
+import { SCALE_GROUPS, SCALE_TYPES } from '../theory/scales';
 
 export type CategoryId = 'chords' | 'scales' | 'arpeggios';
 
@@ -27,8 +28,8 @@ export const CATEGORIES: readonly Category[] = [
     prepare: loadChordDb,
     isPrepared: () => chordDbIfLoaded() !== null,
   },
-  { id: 'scales', label: 'Scales', ready: true },
-  { id: 'arpeggios', label: 'Arpeggios', ready: false },
+  { id: 'scales', label: 'Scales', ready: true, groups: SCALE_GROUPS },
+  { id: 'arpeggios', label: 'Arpeggios', ready: true, groups: ARPEGGIO_GROUPS },
 ];
 
 export interface CatalogItem {
@@ -80,9 +81,20 @@ export const ITEMS: readonly CatalogItem[] = [
     (t): CatalogItem => ({
       id: t.id,
       category: 'scales',
+      group: t.group,
       label: (root) => `${root} ${t.label.toLowerCase()}`,
       short: () => t.label,
       build: (root) => buildScaleShapes(root, t),
+    }),
+  ),
+  ...ARPEGGIO_TYPES.map(
+    (t): CatalogItem => ({
+      id: t.id,
+      category: 'arpeggios',
+      group: t.group,
+      label: (root) => `${root} ${t.label.toLowerCase()}`,
+      short: (root) => `${root}${t.symbol}`,
+      build: (root) => buildArpeggioShapes(root, t),
     }),
   ),
 ];

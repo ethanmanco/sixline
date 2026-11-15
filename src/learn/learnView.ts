@@ -100,7 +100,9 @@ export class LearnView {
       html += `<div class="picker__group picker__group--pos"><span class="picker__label" aria-hidden="true">${unit}</span>`;
       shapes.forEach((s, i) => {
         const where = s.position?.startFret ? `fret ${s.position.startFret}` : 'open';
-        html += `<a class="pick pick--num" data-pick="pos:${i + 1}" href="${href(['learn', category.id, current.id], { pos: i + 1 })}" aria-label="${unit} ${i + 1}, ${where}" ${s === shape ? 'aria-current="true"' : ''}>${i + 1}</a>`;
+        const text = s.position ? String(i + 1) : 'Whole neck';
+        const label = s.position ? `${unit} ${i + 1}, ${where}` : 'Whole neck, every note';
+        html += `<a class="pick${s.position ? ' pick--num' : ''}" data-pick="pos:${i + 1}" href="${href(['learn', category.id, current.id], { pos: i + 1 })}" aria-label="${label}" ${s === shape ? 'aria-current="true"' : ''}>${text}</a>`;
       });
       html += '</div>';
     }

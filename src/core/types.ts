@@ -61,6 +61,8 @@ export interface Shape {
   root: string;
   /** In play order. Scales and arpeggios go low to high; chord notes sound together. */
   notes: FretNote[];
+  /** Note indexes to play, when not simply up and back down (e.g. the whole-neck view plays each pitch once). */
+  playOrder?: number[];
   muted?: StringIndex[];
   barres?: Barre[];
   position?: { index: number; count: number; startFret: number };

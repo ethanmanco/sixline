@@ -50,8 +50,10 @@ describe('assignFingers', () => {
   });
 });
 
+const positionsOf = (shapes: Shape[]) => shapes.filter((s) => s.position);
+
 describe('A minor pentatonic, the five textbook boxes', () => {
-  const shapes = buildScaleShapes('A', scaleType('minor-pentatonic'));
+  const shapes = positionsOf(buildScaleShapes('A', scaleType('minor-pentatonic')));
   it('has five positions', () => expect(shapes).toHaveLength(5));
   it.each([
     [1, '5 8 | 5 7 | 5 7 | 5 7 | 5 8 | 5 8'],
@@ -71,7 +73,7 @@ describe('A minor pentatonic, the five textbook boxes', () => {
 describe('every pentatonic position in every key', () => {
   for (const type of pentatonics) {
     for (const root of ALL_ROOTS) {
-      const shapes = buildScaleShapes(root, type);
+      const shapes = positionsOf(buildScaleShapes(root, type));
       const rootChroma = chromaOfName(root);
       const scaleChromas = new Set(shapes[0].info.noteNames.map(chromaOfName));
 

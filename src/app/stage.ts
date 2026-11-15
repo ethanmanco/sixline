@@ -130,7 +130,7 @@ export class Stage {
     this.playBtn.setAttribute('aria-label', shape ? `Play ${this.describe(shape)}` : 'Play');
     const chord = shape?.kind === 'chord';
     this.el.querySelector<HTMLElement>('[data-chord-play]')!.hidden = !chord;
-    this.el.querySelector('[data-legend-note]')!.textContent = chord ? 'Chord tone' : 'Scale note';
+    this.el.querySelector('[data-legend-note]')!.textContent = shape?.kind === 'scale' ? 'Scale note' : 'Chord tone';
     this.el.querySelector<HTMLElement>('[data-legend-shift]')!.hidden = chord;
     this.el.querySelector<HTMLElement>('[data-legend-muted]')!.hidden = !shape?.muted?.length;
   }
@@ -152,7 +152,8 @@ export class Stage {
   }
 
   private describe(s: Shape): string {
-    if (!s.position || s.position.count < 2) return s.name;
+    if (!s.position) return s.subtitle ? `${s.name}, whole neck` : s.name;
+    if (s.position.count < 2) return s.name;
     return `${s.name}, ${s.kind === 'chord' ? 'voicing' : 'position'} ${s.position.index}`;
   }
 
@@ -170,6 +171,8 @@ export class Stage {
       const picked = all.map((i) => [i]);
       const mode = settings.get().chordPlay;
       order = mode === 'strum' ? [all] : mode === 'pick' ? picked : [...picked, all];
+    } else if (shape.playOrder) {
+      order = shape.playOrder.map((i) => [i]);
     } else {
       // Up the shape and back down again.
       order = [...all, ...all.slice(0, -1).reverse()].map((i) => [i]);
@@ -179,7 +182,7 @@ export class Stage {
       await guitar.sequence(
         order.map((ids) => (ids.length === 1 ? shape.notes[ids[0]].midi : ids.map((i) => shape.notes[i].midi))),
         {
-          step: shape.kind === 'chord' ? 0.26 : 0.3,
+          step: shape.kind === 'chord' ? 0.26 : shape.playOrder ? 0.22 : 0.3,
           onNote: (k) => this.step(order[k]),
           onEnd: () => {
             this.step(null);
