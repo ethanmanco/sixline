@@ -24,7 +24,7 @@ export function createApp(root: HTMLElement): void {
     </header>
     <main id="main" tabindex="-1"></main>
     <footer class="foot">
-      <p>Sixline is free and open source. Guitar sound from the FluidR3 soundfont by Frank Wen. Jam backing tracks by Admiral Bob, BaDoink, and grtgtrplyr2 under Creative Commons licenses.</p>
+      <p>Sixline is free and open source. Guitar sound from the FluidR3 soundfont by Frank Wen. Jam backing tracks by Admiral Bob under a Creative Commons license.</p>
     </footer>`;
 
   const main = root.querySelector<HTMLElement>('main')!;

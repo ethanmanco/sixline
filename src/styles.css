@@ -1352,20 +1352,6 @@ main:focus {
 
 /* ---------- Jam: video, chord follow, sync tool ---------- */
 
-.jt__video {
-  width: 100%;
-  max-width: 480px;
-  aspect-ratio: 16 / 9;
-  border-radius: 10px;
-  overflow: hidden;
-  background: #000;
-}
-.jt__video iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  display: block;
-}
 .jam-bottom {
   display: grid;
   gap: 22px;

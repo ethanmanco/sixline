@@ -20,22 +20,9 @@ import {
   type Timeline,
 } from './timeline';
 import { STYLE_LABELS, TRACKS, creditText, formatTime, songKey, trackById, type Track, type TrackStyle } from './tracks';
-import { YouTubePlayer } from './youtube';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const SPEEDS = [1, 0.9, 0.8, 0.75, 0.7, 0.6, 0.5];
-
-interface Player {
-  play(): Promise<void>;
-  pause(): void;
-  toggle(): Promise<void> | void;
-  seek(s: number): void;
-  setSpeed(r: number): void;
-  setLoop(on: boolean): void;
-  setVolume(v: number): void;
-  readonly state: PlayerState;
-  subscribe(fn: (s: PlayerState) => void): () => void;
-}
 
 type Mode = 'key' | 'chords';
 
@@ -50,10 +37,7 @@ export class JamView {
   readonly top: HTMLElement;
   /** Track library and the chord-sync tool, shown below the fretboard. */
   readonly bottom: HTMLElement;
-  private audio = new TrackPlayer();
-  private yt: YouTubePlayer;
-  private player: Player = this.audio;
-  private unsub: (() => void) | null = null;
+  private player = new TrackPlayer();
   private track: Track = TRACKS[0];
   private mode: Mode = 'key';
   private scaleId = TRACKS[0].scales[0];
@@ -79,7 +63,6 @@ export class JamView {
         <h1 class="jt__title" id="jam-title"></h1>
         <p class="jt__meta"></p>
       </div>
-      <div class="jt__video" data-jt-video hidden></div>
       <div class="jt__controls">
         <button type="button" class="btn btn--play jt__play" data-jt-play>
           <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path data-i-play d="M4 2.5v11l9-5.5z"/><path data-i-pause d="M4 3h3v10H4zM9 3h3v10H9z" hidden/></svg>
@@ -104,8 +87,6 @@ export class JamView {
     this.bottom = document.createElement('div');
     this.bottom.className = 'jam-bottom';
 
-    this.yt = new YouTubePlayer(this.top.querySelector<HTMLElement>('[data-jt-video]')!);
-
     const playBtn = this.top.querySelector<HTMLButtonElement>('[data-jt-play]')!;
     playBtn.addEventListener('click', () => {
       Promise.resolve(this.player.toggle()).catch(() => this.say('The track could not play. Check your connection and try again.'));
@@ -128,15 +109,13 @@ export class JamView {
     loop.addEventListener('click', () => {
       const on = loop.getAttribute('aria-pressed') !== 'true';
       loop.setAttribute('aria-pressed', String(on));
-      this.audio.setLoop(on);
-      this.yt.setLoop(on);
+      this.player.setLoop(on);
     });
     this.top.querySelector<HTMLInputElement>('[data-jt-vol]')!.addEventListener('input', (e) => {
-      const v = Number((e.target as HTMLInputElement).value);
-      this.audio.setVolume(v);
-      this.yt.setVolume(v);
+      this.player.setVolume(Number((e.target as HTMLInputElement).value));
     });
-    this.audio.setVolume(0.9);
+    this.player.setVolume(0.9);
+    this.player.subscribe((s) => this.onState(s));
 
     // Tap along: T steps the chord timeline when the tap tool is open.
     document.addEventListener('keydown', (e) => {
@@ -178,21 +157,9 @@ export class JamView {
     this.nextTap = null;
     this.mode = this.chart.length ? 'chords' : 'key';
 
-    const video = this.top.querySelector<HTMLElement>('[data-jt-video]')!;
-    if (next.kind === 'youtube' && next.youtubeId) {
-      video.hidden = false;
-      this.yt.load(next.youtubeId);
-      this.player = this.yt;
-    } else {
-      this.yt.destroy();
-      video.hidden = true;
-      this.audio.load(`${import.meta.env.BASE_URL}jam/${next.file}`);
-      this.player = this.audio;
-    }
+    this.player.load(`${import.meta.env.BASE_URL}jam/${next.file}`);
     this.player.setSpeed(Number(this.top.querySelector<HTMLSelectElement>('[data-jt-speed]')!.value));
-    this.unsub?.();
-    this.unsub = this.player.subscribe((s) => this.onState(s));
-    if (wasPlaying && next.kind !== 'youtube') this.player.play().catch(() => undefined);
+    if (wasPlaying) this.player.play().catch(() => undefined);
     this.renderTrack();
   }
 
@@ -240,8 +207,10 @@ export class JamView {
     const t = this.track;
     this.top.querySelector('.jt__title')!.textContent = t.title;
     this.updateMeta();
-    const links = [`<a href="${t.source}" target="_blank" rel="noopener">${t.kind === 'youtube' ? 'Watch on YouTube' : 'Original'}</a>`];
-    if (t.kind !== 'youtube') links.push(`<a href="${t.license.url}" target="_blank" rel="noopener">License</a>`);
+    const links = [
+      `<a href="${t.source}" target="_blank" rel="noopener">Original</a>`,
+      `<a href="${t.license.url}" target="_blank" rel="noopener">License</a>`,
+    ];
     if (t.support) links.push(`<a href="${t.support}" target="_blank" rel="noopener">Support the artist</a>`);
     this.top.querySelector('[data-jt-credit]')!.innerHTML = `${esc(creditText(t))}. ${links.join(' · ')}`;
     const est = this.top.querySelector<HTMLElement>('[data-jt-estimate]')!;
@@ -253,7 +222,7 @@ export class JamView {
   private updateMeta(): void {
     const t = this.track;
     const speed = Number(this.top.querySelector<HTMLSelectElement>('[data-jt-speed]')!.value);
-    const bpm = t.bpm ? `${Math.round(t.bpm * speed)} BPM${speed !== 1 ? ` (${t.bpm} at full speed)` : ''}` : t.kind === 'youtube' ? '' : 'tempo not stated';
+    const bpm = t.bpm ? `${Math.round(t.bpm * speed)} BPM${speed !== 1 ? ` (${t.bpm} at full speed)` : ''}` : 'tempo not stated';
     const bits = [STYLE_LABELS[t.style], `key of ${t.keyLabel}`, bpm, t.feel === 'shuffle' ? 'shuffle feel' : '', `by ${t.artist}`].filter(Boolean);
     this.top.querySelector('.jt__meta')!.textContent = bits.join(', ');
   }
@@ -430,7 +399,7 @@ export class JamView {
       <section class="jam-sync-wrap" aria-label="Chord timing">${sync}</section>
       <section class="jam-library" aria-labelledby="jam-lib-title">
         <h2 class="jam-library__title" id="jam-lib-title">Backing tracks</h2>
-        <p class="jam-library__intro">Recorded by real musicians. Most are shared under Creative Commons licenses with the original lead guitar left out; YouTube tracks play from YouTube in YouTube's own player.</p>
+        <p class="jam-library__intro">Recorded by real musicians and shared under Creative Commons licenses, with the original lead guitar left out so the space is yours.</p>
         ${styles
           .map(
             (style) => `
