@@ -1010,3 +1010,68 @@ main:focus {
     padding-top: 4px;
   }
 }
+
+/* ---------- Options fold ---------- */
+
+/* Wide screens: every control is out in the toolbar, no Options button. */
+.toolbar__more {
+  display: contents;
+}
+.btn--more {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  /* Header on one line. */
+  .top {
+    flex-wrap: nowrap;
+    padding: 10px 16px 8px;
+    gap: 10px;
+  }
+  .brand {
+    font-size: 21px;
+    gap: 8px;
+  }
+  .brand__mark {
+    width: 26px;
+    height: 26px;
+  }
+  .sections__link {
+    padding: 5px 10px;
+    font-size: 13px;
+  }
+  /* "soon" stays for screen readers but takes no room. */
+  .sections__link small {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  /* Toolbar: Play, Key, and Options on one row; the rest folds away. */
+  .btn--more {
+    display: inline-flex;
+    margin-left: auto;
+  }
+  .btn--more[aria-expanded='true'] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper);
+  }
+  .toolbar__more {
+    display: none;
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .toolbar.is-more-open .toolbar__more {
+    display: flex;
+  }
+  .toolbar {
+    padding: 8px 0;
+  }
+  .fb-scroll {
+    padding-top: 2px;
+  }
+}
