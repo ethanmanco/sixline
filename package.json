@@ -1,0 +1,24 @@
+{
+  "name": "sixline",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tombatossals/chords-db": "^0.5.1",
+    "tonal": "^6.5.1",
+    "tone": "^15.1.22"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "~5.8.3",
+    "vite": "^6.4.6",
+    "vitest": "^3.2.7"
+  }
+}
