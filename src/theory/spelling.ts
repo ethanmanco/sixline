@@ -3,12 +3,13 @@ import { chromaOf } from './guitar';
 
 /**
  * Turns a tonal interval ("3m", "5d", "7M") into the degree label guitarists
- * read ("b3", "b5", "7").
+ * read ("b3", "b5", "7"). Extensions above the octave keep their number, so a
+ * ninth reads "9", but the octave itself reads "1".
  */
 export function degreeLabel(interval: string): string {
   const iv = Interval.get(interval);
   if (iv.empty) throw new Error(`Unknown interval: ${interval}`);
-  const n = iv.simple === 8 ? 1 : iv.simple;
+  const n = iv.num > 8 ? iv.num : iv.simple === 8 ? 1 : iv.simple;
   const perfectType = iv.type === 'perfectable';
   let prefix = '';
   switch (iv.q) {

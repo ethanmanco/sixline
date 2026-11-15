@@ -54,6 +54,10 @@ export interface Shape {
   kind: ShapeKind;
   /** Full display name, e.g. "A minor pentatonic". */
   name: string;
+  /** Chord symbol, e.g. "Amaj7". */
+  symbol?: string;
+  /** Short line under the name, e.g. "E-shape barre at fret 5". */
+  subtitle?: string;
   root: string;
   /** In play order. Scales and arpeggios go low to high; chord notes sound together. */
   notes: FretNote[];
