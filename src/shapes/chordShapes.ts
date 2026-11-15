@@ -8,20 +8,22 @@ import { noteChroma } from '../theory/spelling';
 
 export type ChordGroup = 'open' | 'barre' | 'power' | 'seventh' | 'sus';
 
-export const CHORD_GROUPS: { id: ChordGroup; label: string }[] = [
-  { id: 'open', label: 'Open chords' },
-  { id: 'barre', label: 'Barre chords' },
-  { id: 'power', label: 'Power chords' },
-  { id: 'seventh', label: '7th chords' },
-  { id: 'sus', label: 'Sus and add9' },
+export const CHORD_GROUPS: { id: ChordGroup; label: string; short: string }[] = [
+  { id: 'open', label: 'Open chords', short: 'Open' },
+  { id: 'barre', label: 'Barre chords', short: 'Barre' },
+  { id: 'power', label: 'Power chords', short: 'Power' },
+  { id: 'seventh', label: '7th chords', short: '7th' },
+  { id: 'sus', label: 'Sus and add9', short: 'Sus, add9' },
 ];
 
 export interface ChordItem {
   id: string;
   group: ChordGroup;
   type: ChordType;
-  /** Short label for the list, given the root, e.g. "A major, E shape". */
+  /** Label for the list, given the root, e.g. "A major, E shape". */
   label: (root: string) => string;
+  /** Chip label for the quick picker, e.g. "A", "Am", "A7". Shown under its group name. */
+  short: (root: string) => string;
   /** Where the voicings come from. */
   source: { kind: 'open' } | { kind: 'all' } | { kind: 'movable'; template: string; shapeLabel: string };
 }
@@ -29,57 +31,57 @@ export interface ChordItem {
 const T = CHORD_TYPES;
 
 export const CHORD_ITEMS: readonly ChordItem[] = [
-  { id: 'open-major', group: 'open', type: T.major, label: (r) => `${r} major`, source: { kind: 'open' } },
-  { id: 'open-minor', group: 'open', type: T.minor, label: (r) => `${r} minor`, source: { kind: 'open' } },
-  { id: 'open-7', group: 'open', type: T.dom7, label: (r) => `${r}7`, source: { kind: 'open' } },
+  { id: 'open-major', group: 'open', type: T.major, short: (r) => r, label: (r) => `${r} major`, source: { kind: 'open' } },
+  { id: 'open-minor', group: 'open', type: T.minor, short: (r) => `${r}m`, label: (r) => `${r} minor`, source: { kind: 'open' } },
+  { id: 'open-7', group: 'open', type: T.dom7, short: (r) => `${r}7`, label: (r) => `${r}7`, source: { kind: 'open' } },
   {
     id: 'barre-major-e',
     group: 'barre',
     type: T.major,
-    label: (r) => `${r} major, E shape`,
+    short: (r) => `${r} E shape`, label: (r) => `${r} major, E shape`,
     source: { kind: 'movable', template: 'major-e', shapeLabel: 'E-shape barre' },
   },
   {
     id: 'barre-major-a',
     group: 'barre',
     type: T.major,
-    label: (r) => `${r} major, A shape`,
+    short: (r) => `${r} A shape`, label: (r) => `${r} major, A shape`,
     source: { kind: 'movable', template: 'major-a', shapeLabel: 'A-shape barre' },
   },
   {
     id: 'barre-minor-e',
     group: 'barre',
     type: T.minor,
-    label: (r) => `${r} minor, E shape`,
+    short: (r) => `${r}m E shape`, label: (r) => `${r} minor, E shape`,
     source: { kind: 'movable', template: 'minor-e', shapeLabel: 'E-shape barre' },
   },
   {
     id: 'barre-minor-a',
     group: 'barre',
     type: T.minor,
-    label: (r) => `${r} minor, A shape`,
+    short: (r) => `${r}m A shape`, label: (r) => `${r} minor, A shape`,
     source: { kind: 'movable', template: 'minor-a', shapeLabel: 'A-shape barre' },
   },
   {
     id: 'power-6',
     group: 'power',
     type: T.power,
-    label: (r) => `${r}5, root on 6th string`,
+    short: (r) => `${r}5 6th string`, label: (r) => `${r}5, root on 6th string`,
     source: { kind: 'movable', template: 'power-6', shapeLabel: 'Power chord, root on the low E string' },
   },
   {
     id: 'power-5',
     group: 'power',
     type: T.power,
-    label: (r) => `${r}5, root on 5th string`,
+    short: (r) => `${r}5 5th string`, label: (r) => `${r}5, root on 5th string`,
     source: { kind: 'movable', template: 'power-5', shapeLabel: 'Power chord, root on the A string' },
   },
-  { id: 'dom7', group: 'seventh', type: T.dom7, label: (r) => `${r}7 (dominant 7)`, source: { kind: 'all' } },
-  { id: 'maj7', group: 'seventh', type: T.maj7, label: (r) => `${r}maj7 (major 7)`, source: { kind: 'all' } },
-  { id: 'm7', group: 'seventh', type: T.m7, label: (r) => `${r}m7 (minor 7)`, source: { kind: 'all' } },
-  { id: 'sus2', group: 'sus', type: T.sus2, label: (r) => `${r}sus2`, source: { kind: 'all' } },
-  { id: 'sus4', group: 'sus', type: T.sus4, label: (r) => `${r}sus4`, source: { kind: 'all' } },
-  { id: 'add9', group: 'sus', type: T.add9, label: (r) => `${r}add9`, source: { kind: 'all' } },
+  { id: 'dom7', group: 'seventh', type: T.dom7, short: (r) => `${r}7`, label: (r) => `${r}7 (dominant 7)`, source: { kind: 'all' } },
+  { id: 'maj7', group: 'seventh', type: T.maj7, short: (r) => `${r}maj7`, label: (r) => `${r}maj7 (major 7)`, source: { kind: 'all' } },
+  { id: 'm7', group: 'seventh', type: T.m7, short: (r) => `${r}m7`, label: (r) => `${r}m7 (minor 7)`, source: { kind: 'all' } },
+  { id: 'sus2', group: 'sus', type: T.sus2, short: (r) => `${r}sus2`, label: (r) => `${r}sus2`, source: { kind: 'all' } },
+  { id: 'sus4', group: 'sus', type: T.sus4, short: (r) => `${r}sus4`, label: (r) => `${r}sus4`, source: { kind: 'all' } },
+  { id: 'add9', group: 'sus', type: T.add9, short: (r) => `${r}add9`, label: (r) => `${r}add9`, source: { kind: 'all' } },
 ];
 
 /** An open voicing sits in the first few frets and lets at least one string ring open. */

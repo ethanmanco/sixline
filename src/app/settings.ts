@@ -1,13 +1,17 @@
 import type { LabelMode } from '../core/types';
 
+export type ChordPlay = 'strum' | 'pick' | 'both';
+
 export interface Settings {
   labelMode: LabelMode;
+  /** How Play sounds a chord: all at once, one string at a time, or one at a time then all together. */
+  chordPlay: ChordPlay;
   lefty: boolean;
   showFretboard: boolean;
 }
 
 const STORAGE_KEY = 'sixline.settings.v1';
-const DEFAULTS: Settings = { labelMode: 'finger', lefty: false, showFretboard: true };
+const DEFAULTS: Settings = { labelMode: 'finger', chordPlay: 'both', lefty: false, showFretboard: true };
 
 function load(): Settings {
   try {
@@ -18,6 +22,9 @@ function load(): Settings {
       labelMode: ['finger', 'note', 'degree', 'none'].includes(parsed.labelMode as string)
         ? (parsed.labelMode as LabelMode)
         : DEFAULTS.labelMode,
+      chordPlay: ['strum', 'pick', 'both'].includes(parsed.chordPlay as string)
+        ? (parsed.chordPlay as ChordPlay)
+        : DEFAULTS.chordPlay,
       lefty: typeof parsed.lefty === 'boolean' ? parsed.lefty : DEFAULTS.lefty,
       showFretboard: typeof parsed.showFretboard === 'boolean' ? parsed.showFretboard : DEFAULTS.showFretboard,
     };

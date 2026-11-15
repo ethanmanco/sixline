@@ -12,7 +12,7 @@ export interface Category {
   /** False until that category is built. */
   ready: boolean;
   /** Subheadings for the item list, in order. */
-  groups?: { id: string; label: string }[];
+  groups?: { id: string; label: string; short: string }[];
   /** Loads any data the category needs before it can build shapes. */
   prepare?: () => Promise<unknown>;
   isPrepared?: () => boolean;
@@ -37,6 +37,8 @@ export interface CatalogItem {
   group?: string;
   /** List label in a key, e.g. "A minor pentatonic" or "A major, E shape". */
   label: (root: string) => string;
+  /** Chip label for the quick picker. */
+  short: (root: string) => string;
   /** Every position or voicing of this item in one key. May be empty. */
   build: (root: string) => Shape[];
   /** Where to send people when this key has no such shape. */
@@ -65,6 +67,7 @@ export const ITEMS: readonly CatalogItem[] = [
       category: 'chords',
       group: c.group,
       label: c.label,
+      short: c.short,
       build: (root) => {
         const db = chordDbIfLoaded();
         if (!db) throw new Error('Chord data is not loaded yet');
@@ -78,6 +81,7 @@ export const ITEMS: readonly CatalogItem[] = [
       id: t.id,
       category: 'scales',
       label: (root) => `${root} ${t.label.toLowerCase()}`,
+      short: () => t.label,
       build: (root) => buildScaleShapes(root, t),
     }),
   ),

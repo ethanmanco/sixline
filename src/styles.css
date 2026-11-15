@@ -82,6 +82,10 @@ a {
   outline-offset: 2px;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .visually-hidden {
   position: absolute !important;
   width: 1px;
@@ -677,31 +681,6 @@ main:focus {
   color: var(--ink-2);
 }
 
-.positions {
-  display: flex;
-  gap: 6px;
-  margin: 16px 0 6px;
-  flex-wrap: wrap;
-}
-.positions__btn {
-  min-width: 42px;
-  height: 42px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  text-decoration: none;
-  font: 600 15px/1 var(--font-mono);
-}
-.positions__btn:hover {
-  border-color: var(--ink-3);
-}
-.positions__btn[aria-current='true'] {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--paper);
-}
-
 .facts {
   margin: 16px 0;
   display: grid;
@@ -897,4 +876,93 @@ main:focus {
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px 8px 14px;
+}
+
+/* ---------- Quick picker (above the fretboard) ---------- */
+
+.picker {
+  margin: 0 0 12px;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--line);
+}
+.picker__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+.picker__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.picker__label {
+  font: 600 11px/1 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  margin-right: 4px;
+}
+.pick {
+  font: 600 14px/1 var(--font-ui);
+  padding: 7px 10px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.pick:hover {
+  border-color: var(--ink-3);
+}
+.pick[aria-current='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+.pick--num {
+  min-width: 32px;
+  justify-content: center;
+}
+.picker__group--pos {
+  padding-left: 18px;
+  border-left: 1px solid var(--line);
+}
+.legend__x {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+@media (max-width: 700px) {
+  /* One swipeable row on phones, so the neck stays near the top. */
+  .picker__nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scrollbar-width: thin;
+  }
+  .picker__group {
+    flex-wrap: nowrap;
+  }
+}
+
+@media (max-width: 700px) {
+  .toolbar {
+    gap: 8px;
+  }
+  .seg__opt span {
+    padding: 7px 9px;
+    font-size: 13px;
+  }
+  .btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .btn--play {
+    padding: 8px 14px 8px 12px;
+  }
 }

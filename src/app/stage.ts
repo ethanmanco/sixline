@@ -2,7 +2,13 @@ import { guitar } from '../audio/guitar';
 import type { LabelMode, Shape } from '../core/types';
 import { Fretboard } from '../fretboard/fretboard';
 import { prefersSharps, spellMidi } from '../theory/spelling';
-import { settings } from './settings';
+import { settings, type ChordPlay } from './settings';
+
+const CHORD_PLAY: { id: ChordPlay; label: string }[] = [
+  { id: 'strum', label: 'Strum' },
+  { id: 'pick', label: 'One by one' },
+  { id: 'both', label: 'Both' },
+];
 
 const LABEL_MODES: { id: LabelMode; label: string }[] = [
   { id: 'finger', label: 'Finger' },
@@ -41,6 +47,12 @@ export class Stage {
           <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path data-icon-play d="M4 2.5v11l9-5.5z"/><path data-icon-stop d="M3.5 3.5h9v9h-9z" hidden/></svg>
           <span data-play-text>Play</span>
         </button>
+        <fieldset class="seg" data-chord-play hidden>
+          <legend class="seg__legend">How to play the chord</legend>
+          ${CHORD_PLAY.map(
+            (m) => `<label class="seg__opt"><input type="radio" name="chord-play" value="${m.id}"><span>${m.label}</span></label>`,
+          ).join('')}
+        </fieldset>
         <fieldset class="seg">
           <legend class="seg__legend">Dot labels</legend>
           ${LABEL_MODES.map(
@@ -53,12 +65,14 @@ export class Stage {
         </div>
         <p class="status" role="status" aria-live="polite"></p>
       </div>
+      <div class="picker" data-picker hidden></div>
       <div class="stage__panel" id="fretboard-panel">
         <div class="fb-scroll" data-fb></div>
         <p class="legend" aria-hidden="true">
           <span class="legend__item"><i class="legend__dot legend__dot--root"></i>Root</span>
-          <span class="legend__item"><i class="legend__dot"></i>Scale note</span>
-          <span class="legend__item"><i class="legend__dot legend__dot--shift"></i>Hand shifts one fret</span>
+          <span class="legend__item"><i class="legend__dot"></i><span data-legend-note>Scale note</span></span>
+          <span class="legend__item" data-legend-shift><i class="legend__dot legend__dot--shift"></i>Hand shifts one fret</span>
+          <span class="legend__item" data-legend-muted hidden><i class="legend__x">×</i>Don't play this string</span>
           <span class="legend__hint">Tap any fret to hear it. Arrow keys move, Enter plays.</span>
         </p>
       </div>`;
@@ -68,6 +82,9 @@ export class Stage {
     this.status = this.el.querySelector<HTMLElement>('.status')!;
 
     this.playBtn.addEventListener('click', () => this.togglePlay());
+    this.el.querySelectorAll<HTMLInputElement>('input[name="chord-play"]').forEach((input) =>
+      input.addEventListener('change', () => settings.set({ chordPlay: input.value as ChordPlay })),
+    );
     this.el.querySelectorAll<HTMLInputElement>('input[name="label-mode"]').forEach((input) =>
       input.addEventListener('change', () => settings.set({ labelMode: input.value as LabelMode })),
     );
@@ -81,6 +98,7 @@ export class Stage {
       this.fretboard.setLabelMode(s.labelMode);
       this.fretboard.setLefty(s.lefty);
       this.el.querySelectorAll<HTMLInputElement>('input[name="label-mode"]').forEach((i) => (i.checked = i.value === s.labelMode));
+      this.el.querySelectorAll<HTMLInputElement>('input[name="chord-play"]').forEach((i) => (i.checked = i.value === s.chordPlay));
       lefty.setAttribute('aria-pressed', String(s.lefty));
       show.setAttribute('aria-expanded', String(s.showFretboard));
       show.textContent = s.showFretboard ? 'Hide fretboard' : 'Show fretboard';
@@ -110,6 +128,21 @@ export class Stage {
     this.fretboard.setShape(shape);
     this.playBtn.disabled = !shape;
     this.playBtn.setAttribute('aria-label', shape ? `Play ${this.describe(shape)}` : 'Play');
+    const chord = shape?.kind === 'chord';
+    this.el.querySelector<HTMLElement>('[data-chord-play]')!.hidden = !chord;
+    this.el.querySelector('[data-legend-note]')!.textContent = chord ? 'Chord tone' : 'Scale note';
+    this.el.querySelector<HTMLElement>('[data-legend-shift]')!.hidden = chord;
+    this.el.querySelector<HTMLElement>('[data-legend-muted]')!.hidden = !shape?.muted?.length;
+  }
+
+  /**
+   * A quick picker that sits right above the fretboard, so switching between
+   * items never needs a scroll. The section that owns the stage fills it.
+   */
+  setPicker(content: HTMLElement | null): void {
+    const slot = this.el.querySelector<HTMLElement>('[data-picker]')!;
+    slot.replaceChildren(...(content ? [content] : []));
+    slot.hidden = !content;
   }
 
   /** Get told which notes are sounding, e.g. to light up a tab column. */
@@ -132,12 +165,15 @@ export class Stage {
     if (!shape) return;
     const all = shape.notes.map((_, i) => i);
     // Each step lists the shape's note indexes that sound together.
-    const order: number[][] =
-      shape.kind === 'chord'
-        ? // Pick each string low to high, then strum the whole chord.
-          [...all.map((i) => [i]), all]
-        : // Up the shape and back down again.
-          [...all, ...all.slice(0, -1).reverse()].map((i) => [i]);
+    let order: number[][];
+    if (shape.kind === 'chord') {
+      const picked = all.map((i) => [i]);
+      const mode = settings.get().chordPlay;
+      order = mode === 'strum' ? [all] : mode === 'pick' ? picked : [...picked, all];
+    } else {
+      // Up the shape and back down again.
+      order = [...all, ...all.slice(0, -1).reverse()].map((i) => [i]);
+    }
     this.setPlaying(true);
     try {
       await guitar.sequence(

@@ -24,6 +24,8 @@ export class LearnView {
 
   async render(route: Route, root: string): Promise<void> {
     const token = ++this.renderToken;
+    // Remember a focused picker chip so keyboard users keep their place after the re-render.
+    const focusedPick = (document.activeElement as HTMLElement | null)?.dataset?.pick;
     const category = CATEGORIES.find((c) => c.id === route.category && c.ready) ?? CATEGORIES.find((c) => c.id === 'scales')!;
 
     this.el.innerHTML = `
@@ -63,9 +65,48 @@ export class LearnView {
 
     this.stage.setRoot(root);
     this.stage.setShape(shape);
+    this.renderPicker(category, items, item, shapes, shape, root, focusedPick);
     this.renderList(category, items, item, root);
-    if (shape) this.renderDetail(shape, shapes, category, item);
+    if (shape) this.renderDetail(shape);
     else this.renderEmpty(category, item, root);
+  }
+
+  /** Chips above the fretboard for every item and voicing, so switching never needs a scroll. */
+  private renderPicker(
+    category: Category,
+    items: CatalogItem[],
+    current: CatalogItem,
+    shapes: Shape[],
+    shape: Shape | null,
+    root: string,
+    focusedPick: string | undefined,
+  ): void {
+    const nav = document.createElement('nav');
+    nav.className = 'picker__nav';
+    nav.setAttribute('aria-label', `Pick ${category.label.toLowerCase()}`);
+    const groups = category.groups ?? [{ id: '', label: category.label, short: category.label }];
+    let html = '';
+    for (const g of groups) {
+      const inGroup = items.filter((i) => (g.id ? i.group === g.id : true));
+      if (!inGroup.length) continue;
+      html += `<div class="picker__group"><span class="picker__label" aria-hidden="true">${esc(g.short)}</span>`;
+      for (const it of inGroup) {
+        html += `<a class="pick" data-pick="item:${it.id}" href="${href(['learn', category.id, it.id])}" aria-label="${esc(it.label(root))}" ${it.id === current.id ? 'aria-current="true"' : ''}>${esc(it.short(root))}</a>`;
+      }
+      html += '</div>';
+    }
+    if (shape && shapes.length > 1) {
+      const unit = shape.kind === 'chord' ? 'Voicing' : 'Position';
+      html += `<div class="picker__group picker__group--pos"><span class="picker__label" aria-hidden="true">${unit}</span>`;
+      shapes.forEach((s, i) => {
+        const where = s.position?.startFret ? `fret ${s.position.startFret}` : 'open';
+        html += `<a class="pick pick--num" data-pick="pos:${i + 1}" href="${href(['learn', category.id, current.id], { pos: i + 1 })}" aria-label="${unit} ${i + 1}, ${where}" ${s === shape ? 'aria-current="true"' : ''}>${i + 1}</a>`;
+      });
+      html += '</div>';
+    }
+    nav.innerHTML = html;
+    this.stage.setPicker(nav);
+    if (focusedPick) nav.querySelector<HTMLElement>(`[data-pick="${focusedPick}"]`)?.focus();
   }
 
   private renderList(category: Category, items: CatalogItem[], current: CatalogItem, root: string): void {
@@ -118,11 +159,9 @@ export class LearnView {
     this.unStep = null;
   }
 
-  private renderDetail(shape: Shape, all: Shape[], category: Category, item: CatalogItem): void {
+  private renderDetail(shape: Shape): void {
     const d = this.el.querySelector<HTMLElement>('.detail')!;
     const pos = shape.position;
-    const isChord = shape.kind === 'chord';
-    const unit = isChord ? 'Voicing' : 'Position';
     const sub =
       shape.subtitle ??
       (pos ? `Position ${pos.index} of ${pos.count}, starting at fret ${pos.startFret}` : '');
@@ -132,18 +171,6 @@ export class LearnView {
         <h2 id="detail-title">${esc(shape.name)}${shape.symbol && shape.symbol !== shape.name ? ` <span class="detail__symbol">${esc(shape.symbol)}</span>` : ''}</h2>
         ${sub ? `<p class="detail__sub">${esc(sub)}</p>` : ''}
       </header>
-      ${
-        all.length > 1
-          ? `<nav class="positions" aria-label="${unit}s">
-              ${all
-                .map(
-                  (s, i) =>
-                    `<a class="positions__btn" href="${href(['learn', category.id, item.id], { pos: i + 1 })}" ${s === shape ? 'aria-current="true"' : ''} aria-label="${unit} ${i + 1}, ${s.position?.startFret ? `fret ${s.position.startFret}` : 'open'}">${i + 1}</a>`,
-                )
-                .join('')}
-            </nav>`
-          : ''
-      }
       <dl class="facts">
         <div><dt>Notes</dt><dd class="facts__chips">${shape.info.noteNames.map((n, i) => `<span class="chip${i === 0 ? ' chip--root' : ''}">${esc(n)}</span>`).join('')}</dd></div>
         <div><dt>Intervals</dt><dd class="facts__chips">${shape.info.intervals.map((n, i) => `<span class="chip${i === 0 ? ' chip--root' : ''}">${esc(n)}</span>`).join('')}</dd></div>
