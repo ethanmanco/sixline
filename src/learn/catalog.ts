@@ -6,9 +6,10 @@ import { buildScaleShapes } from '../shapes/scaleShapes';
 import { spellChord } from '../theory/chords';
 import { SCALE_GROUPS, SCALE_TYPES, spellScale } from '../theory/scales';
 import { STRING_SETS, TRIAD_TYPES, buildTriadShapes } from '../shapes/triadShapes';
+import { DROP2_SETS, DROP2_TYPES, buildDrop2Shapes } from '../shapes/drop2Shapes';
 import { INTERVAL_TYPES, RUN_TYPES, buildIntervalShapes, buildRunShapes } from '../shapes/intervalShapes';
 
-export type CategoryId = 'chords' | 'scales' | 'arpeggios' | 'triads' | 'intervals';
+export type CategoryId = 'chords' | 'scales' | 'arpeggios' | 'triads' | 'drop2' | 'intervals';
 
 export interface Category {
   id: CategoryId;
@@ -38,6 +39,12 @@ export const CATEGORIES: readonly Category[] = [
     label: 'Triads',
     ready: true,
     groups: STRING_SETS.map((s) => ({ id: s.id, label: s.label, short: s.short })),
+  },
+  {
+    id: 'drop2',
+    label: 'Drop 2',
+    ready: true,
+    groups: DROP2_SETS.map((s) => ({ id: s.id, label: s.label, short: s.short })),
   },
   {
     id: 'intervals',
@@ -116,6 +123,19 @@ export const ITEMS: readonly CatalogItem[] = [
         label: (key) => `${spellChord(key, t).root} ${t.label} triad, ${set.short}`,
         short: (key) => spellChord(key, t).name,
         build: (key) => buildTriadShapes(key, t, set),
+      }),
+    ),
+  ),
+  // Drop 2: one item per chord type on each four-string group; the positions are the four bass notes.
+  ...DROP2_SETS.flatMap((set) =>
+    DROP2_TYPES.map(
+      (t): CatalogItem => ({
+        id: `${t.id}-${set.id}`,
+        category: 'drop2',
+        group: set.id,
+        label: (key) => `${spellChord(key, t).name} drop 2, ${set.short}`,
+        short: (key) => spellChord(key, t).name,
+        build: (key) => buildDrop2Shapes(key, t, set),
       }),
     ),
   ),

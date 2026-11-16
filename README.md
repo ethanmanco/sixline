@@ -29,6 +29,7 @@ Sixline is the first phase of a guitar learning app built around one interactive
   - Dominant 7, major 7, minor 7, minor 7 flat 5, diminished 7, and minor major 7.
   - Major 6, minor 6, and dominant 9.
 - **Triads:** major, minor, diminished, and augmented triads in root position and both inversions, on each set of three neighboring strings (G B e, D G B, A D G, E A D).
+- **Drop 2:** four-note 7th and 6th chords (major 7, dominant 7, minor 7, minor 7 flat 5, diminished 7, 6, and minor 6) on each group of four neighboring strings (D G B e, A D G B, E A D G), with each chord tone in the bass.
 - **Intervals:**
   - Interval shapes from the root: minor and major 3rd, perfect 4th, tritone, perfect 5th, minor and major 6th, and the octave, on every string pair where they fit.
   - Double stops in the key: 3rds on the B and high E or G and B strings, and 6ths on the G and high E or D and B strings, running up the major scale.
@@ -68,6 +69,7 @@ Chord fingerings come from [chords-db](https://github.com/tombatossals/chords-db
 - **Blues and major blues:** the minor or major pentatonic boxes with the blue note added where it falls.
 - **Barre and power chords:** the standard movable shapes, slid to the root. They use the chords-db fingering whenever chords-db has the same voicing.
 - **Slash chords:** the open shapes chords-db has (like G/B and D/F#), plus a movable shape that works in every key.
+- **Drop 2:** take a close chord, drop its second-highest note an octave, and place the notes bottom to top on four neighboring strings, in whichever octave fits on frets 1 to 15 within four frets.
 - **Triads:** the chosen bass note goes on the lowest of the three strings and each next chord tone goes on the next string up, in whichever octave stays on frets 1 to 15.
 - **Intervals and double stops:** the lower fret gets the index finger and the other note gets the finger that matches the distance. Shapes a string apart tell you to mute the string in between.
 - **Readable spelling:** if a key would need awkward names, the root is respelled. Db dorian shows as C# dorian. Symmetric scales and augmented chords use plain note names (G rather than F##).

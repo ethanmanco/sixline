@@ -291,3 +291,34 @@ export const CHORD_DESCRIPTIONS: Record<string, Description> = {
     useWhen: 'Descending bass lines in minor keys, like Am, Am/G, then Am/E with the bass walking down.',
   },
 };
+
+export const DROP2_DESCRIPTIONS: Record<string, Description> = {
+  maj7: {
+    sound: 'A major 7 chord spread over four strings: open, warm, and glassy.',
+    useWhen: 'Jazz comping, soul, and bossa nova. Move between the four inversions to keep the top note singing a melody.',
+  },
+  dom7: {
+    sound: 'A dominant 7 with every note clear and separate. Bluesy and ready to move.',
+    useWhen: 'Comping over blues and the V chord in jazz. Slide one inversion up to the next for a classic walk-up.',
+  },
+  m7: {
+    sound: 'A minor 7 that sounds smooth and full without getting muddy.',
+    useWhen: 'Funk, neo soul, and the ii chord in a ii V I. Pairs naturally with the dominant 7 shapes on the same strings.',
+  },
+  m7b5: {
+    sound: 'A half-diminished chord with a dark, searching color.',
+    useWhen: 'The ii chord in a minor key ii V i, and moody ballads.',
+  },
+  dim7: {
+    sound: 'Stacked minor thirds, so every inversion has the same shape, three frets apart.',
+    useWhen: 'Passing chords between diatonic chords. Slide the shape up three frets for the same notes in a new order.',
+  },
+  six: {
+    sound: 'A major 6 chord: sweet, a little vintage, and lighter than a major 7.',
+    useWhen: 'Swing, Western swing, and as a softer home chord in jazz and pop.',
+  },
+  m6: {
+    sound: 'A minor 6 chord: cool, mysterious, a little noir.',
+    useWhen: 'Minor-key home chords in jazz and bossa nova, and Dorian vamps.',
+  },
+};
