@@ -1,0 +1,44 @@
+name: Rate Sixline
+description: Give Sixline a rating and tell us what worked for you and what didn't.
+title: "[Rating] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for trying Sixline! Your rating helps decide what to build next.
+  - type: dropdown
+    id: rating
+    attributes:
+      label: Your rating
+      options:
+        - "★★★★★ 5 out of 5: love it"
+        - "★★★★☆ 4 out of 5: really good"
+        - "★★★☆☆ 3 out of 5: it's okay"
+        - "★★☆☆☆ 2 out of 5: needs work"
+        - "★☆☆☆☆ 1 out of 5: not for me"
+    validations:
+      required: true
+  - type: checkboxes
+    id: used
+    attributes:
+      label: What did you use?
+      options:
+        - label: Learn (chords, scales, arpeggios, triads, intervals)
+        - label: Jam (backing tracks)
+        - label: My own tracks in Jam
+  - type: dropdown
+    id: device
+    attributes:
+      label: Mostly on
+      options:
+        - Phone
+        - Tablet
+        - Computer
+  - type: textarea
+    id: liked
+    attributes:
+      label: What did you like?
+  - type: textarea
+    id: improve
+    attributes:
+      label: What would make it better?

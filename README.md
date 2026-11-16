@@ -82,6 +82,10 @@ A few chords-db voicings contain a note that is not in the chord, leave out a ch
 - Sound only starts after you click, tap, or press a key.
 - Animations turn off when your system asks for reduced motion.
 
+## Rate Sixline
+
+Tried it? [Rate Sixline](https://github.com/ethanmanco/sixline/issues/new?template=rate-sixline.yml) (a short form: a 1 to 5 rating, what you used, and what to improve), or [star the repo](https://github.com/ethanmanco/sixline) if you like it. Both need a free GitHub account.
+
 ## Roadmap
 
 1. **Learn** (this version): chords, scales, and arpeggios in any key on an interactive fretboard.

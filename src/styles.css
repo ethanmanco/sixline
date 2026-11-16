@@ -1542,3 +1542,34 @@ kbd {
 .sync__status:empty {
   display: none;
 }
+
+/* ---------- Rate Sixline ---------- */
+
+.rate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.rate__text {
+  margin: 0;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.rate__text strong {
+  color: var(--ink);
+}
+.rate__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rate__links .btn {
+  text-decoration: none;
+}

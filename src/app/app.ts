@@ -11,6 +11,8 @@ const LOGO = `<svg class="brand__mark" viewBox="0 0 28 28" aria-hidden="true">
   <circle cx="17" cy="12.5" r="2.6" class="brand__dot"/>
 </svg>`;
 
+const REPO = 'https://github.com/ethanmanco/sixline';
+
 export function createApp(root: HTMLElement): void {
   root.innerHTML = `
     <a class="skip" href="#main">Skip to content</a>
@@ -24,6 +26,13 @@ export function createApp(root: HTMLElement): void {
     </header>
     <main id="main" tabindex="-1"></main>
     <footer class="foot">
+      <div class="rate">
+        <p class="rate__text"><strong>Enjoying Sixline?</strong> Tell me what you think. It takes a minute with a free GitHub account.</p>
+        <div class="rate__links">
+          <a class="btn btn--play" href="${REPO}/issues/new?template=rate-sixline.yml" target="_blank" rel="noopener">Rate Sixline</a>
+          <a class="btn" href="${REPO}" target="_blank" rel="noopener">Star it on GitHub</a>
+        </div>
+      </div>
       <p>Sixline is free and open source. Guitar sound from the FluidR3 soundfont by Frank Wen. Jam backing tracks by Admiral Bob under a Creative Commons license.</p>
     </footer>`;
 
