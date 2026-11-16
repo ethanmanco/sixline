@@ -12,6 +12,8 @@
   --accent-strong: #b8361c;
   --accent-ink: #fffaf3;
   --accent-soft: rgba(207, 67, 39, 0.14);
+  --good: #2f7d4f;
+  --good-soft: rgba(47, 125, 79, 0.14);
   --focus: #1b5fd1;
 
   --neck: #e7dcc9;
@@ -43,6 +45,8 @@
     --accent-strong: #ff7a58;
     --accent-ink: #1a0f0a;
     --accent-soft: rgba(240, 98, 63, 0.2);
+    --good: #5cc98a;
+    --good-soft: rgba(92, 201, 138, 0.18);
     --focus: #7fb0ff;
 
     --neck: #26211c;
@@ -1572,4 +1576,222 @@ kbd {
 }
 .rate__links .btn {
   text-decoration: none;
+}
+
+/* ---------- Tuner ---------- */
+
+.tuner {
+  display: grid;
+  gap: 14px;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+}
+.tuner__bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+}
+.tuner__about {
+  margin: -4px 0 0;
+  font-size: 14px;
+  color: var(--ink-3);
+}
+.tuner__display {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 18px 16px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+.tuner.is-tuned .tuner__display {
+  border-color: var(--good);
+  box-shadow: 0 0 0 3px var(--good-soft);
+}
+.tuner__mic {
+  justify-self: center;
+  min-width: 170px;
+  justify-content: center;
+}
+.tuner__mic.is-on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+.tuner__readout {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+}
+.tuner__note {
+  font: 700 92px/1 var(--font-display);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  min-height: 92px;
+}
+.tuner__note small {
+  font: 600 22px/1 var(--font-mono);
+  color: var(--ink-3);
+  margin-left: 4px;
+}
+.tuner.is-tuned .tuner__note {
+  color: var(--good);
+}
+.gauge {
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+}
+.gauge__zone {
+  fill: var(--good-soft);
+  stroke: var(--good);
+  stroke-width: 1.5;
+}
+.gauge__tick {
+  stroke: var(--ink-3);
+  stroke-width: 1.5;
+}
+.gauge__tick--big {
+  stroke: var(--ink-2);
+  stroke-width: 2.5;
+}
+.gauge__label {
+  fill: var(--ink-3);
+  font: 600 13px var(--font-mono);
+}
+.gauge__needle {
+  transition: transform 90ms linear, opacity 200ms ease;
+}
+.gauge__needle line {
+  stroke: var(--accent-strong);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.gauge__needle circle {
+  fill: var(--accent-strong);
+}
+.tuner.is-tuned .gauge__needle line,
+.tuner.is-tuned .gauge__needle circle {
+  stroke: var(--good);
+  fill: var(--good);
+}
+.tuner__cents {
+  margin: 2px 0 0;
+  font: 500 14px/1.3 var(--font-mono);
+  color: var(--ink-2);
+}
+.tuner__hint {
+  margin: 4px 0 0;
+  min-height: 1.4em;
+  font: 600 19px/1.35 var(--font-ui);
+  text-align: center;
+  color: var(--ink);
+}
+.tuner.is-flat .tuner__hint,
+.tuner.is-sharp .tuner__hint {
+  color: var(--accent-strong);
+}
+.tuner.is-tuned .tuner__hint {
+  color: var(--good);
+}
+.tuner__strings {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.tstring {
+  display: grid;
+  gap: 4px;
+}
+.tstring__pick {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 10px 4px 8px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  cursor: pointer;
+  position: relative;
+}
+.tstring__pick:hover {
+  border-color: var(--ink-3);
+}
+.tstring__pick[aria-pressed='true'] {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+.tstring.is-current .tstring__pick {
+  border-color: var(--accent);
+}
+.tstring__num {
+  font: 600 11px/1 var(--font-mono);
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+.tstring__note {
+  font: 700 26px/1.1 var(--font-display);
+}
+.tstring__note small {
+  font: 600 11px/1 var(--font-mono);
+  color: var(--ink-3);
+  margin-left: 2px;
+}
+.tstring__check {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--good);
+  visibility: hidden;
+}
+.tstring.is-done .tstring__check {
+  visibility: visible;
+}
+.tstring.is-done .tstring__pick {
+  border-color: var(--good);
+}
+.tstring__hear {
+  font: 500 12px/1 var(--font-ui);
+  color: var(--ink-2);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+.tstring__hear:hover {
+  border-color: var(--ink-3);
+}
+.tuner__mode {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-2);
+  text-align: center;
+}
+.tuner__tips {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.tuner__tips summary {
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .tuner__note {
+    font-size: 76px;
+    min-height: 76px;
+  }
+  .tuner__strings {
+    gap: 5px;
+  }
+  .tstring__note {
+    font-size: 21px;
+  }
+  .tuner__hint {
+    font-size: 17px;
+  }
 }

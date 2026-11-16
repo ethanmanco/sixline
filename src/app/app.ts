@@ -1,4 +1,5 @@
 import { JamView } from '../jam/jamView';
+import { TunerView } from '../tuner/tunerView';
 import { LearnView } from '../learn/learnView';
 import { KEYS, keyOptionLabel, normalizeKey } from '../theory/keys';
 import { href, onRoute, parseRoute } from './router';
@@ -21,6 +22,7 @@ export function createApp(root: HTMLElement): void {
       <nav class="sections" aria-label="Sections">
         <a class="sections__link" data-section="learn" href="${href(['learn'])}">Learn</a>
         <a class="sections__link" data-section="jam" href="${href(['jam'])}">Jam</a>
+        <a class="sections__link" data-section="tune" href="${href(['tune'])}">Tune</a>
         <span class="sections__link sections__link--soon" aria-disabled="true">Songs<small>soon</small></span>
       </nav>
     </header>
@@ -40,7 +42,8 @@ export function createApp(root: HTMLElement): void {
   const stage = new Stage();
   const learn = new LearnView(stage);
   const jam = new JamView(stage);
-  main.append(jam.top, stage.el, learn.el, jam.bottom);
+  const tuner = new TunerView();
+  main.append(tuner.el, jam.top, stage.el, learn.el, jam.bottom);
 
   // Key picker: lives next to Play, so it is always in reach.
   const keyLabel = document.createElement('label');
@@ -62,10 +65,24 @@ export function createApp(root: HTMLElement): void {
 
   onRoute((route) => {
     const inJam = route.section === 'jam';
+    const inTune = route.section === 'tune';
+    const section = inJam ? 'jam' : inTune ? 'tune' : 'learn';
     root.querySelectorAll<HTMLElement>('.sections__link[data-section]').forEach((a) => {
-      if (a.dataset.section === route.section || (!inJam && a.dataset.section === 'learn')) a.setAttribute('aria-current', 'page');
+      if (a.dataset.section === section) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
     });
+    tuner.el.hidden = !inTune;
+    stage.el.hidden = inTune;
+    if (inTune) {
+      jam.stop();
+      jam.top.hidden = true;
+      jam.bottom.hidden = true;
+      learn.el.hidden = true;
+      document.title = 'Tuner · Sixline';
+      return;
+    }
+    tuner.stop();
+    document.title = 'Sixline: guitar shapes for tab readers';
     jam.top.hidden = !inJam;
     jam.bottom.hidden = !inJam;
     learn.el.hidden = inJam;

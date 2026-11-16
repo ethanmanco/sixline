@@ -49,6 +49,16 @@ Play along with a backing track while the fretboard shows what to play.
 - **Tap to sync:** tap along with the track once to mark when each chord starts, and the fretboard follows the music from then on.
 - **Practice tools:** slow down to 50% without changing pitch, loop, and volume.
 
+## Tune
+
+A guitar tuner that listens through your microphone.
+
+- **Big and readable:** the note, a flat-to-sharp gauge with a green in-tune zone, and a plain instruction like "Tighten the 5th string (A): 31 cents flat".
+- **Tunings:** standard, half step down, whole step down, drop D, drop C, DADGAD, open D, open G, open E, open A, and open C.
+- **Every string at a glance:** each of the six strings gets a check mark once it holds in tune, and a Hear button plays its target note. Tap a string to tune only that one; otherwise the tuner works out which string you are playing.
+- **Reference pitch:** A = 440 Hz by default, adjustable from 432 to 446.
+- **Private:** the microphone is only on while the tuner runs, and the sound never leaves your device. Pitch detection uses the YIN method, tested to within 1 cent on every guitar string.
+
 ## The fretboard
 
 - Six strings in standard tuning, frets 0 to 15. Horizontal on wide screens, and vertical like a chord chart on a phone held upright.

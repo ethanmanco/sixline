@@ -11,10 +11,13 @@ export interface Settings {
   showFretboard: boolean;
   /** Last key picked, used when a link does not name one. */
   key: string;
+  /** Tuner: tuning id and the reference pitch for A4 in Hz. */
+  tuning: string;
+  a4: number;
 }
 
 const STORAGE_KEY = 'sixline.settings.v1';
-const DEFAULTS: Settings = { labelMode: 'finger', chordPlay: 'both', lefty: false, showFretboard: true, key: 'A' };
+const DEFAULTS: Settings = { labelMode: 'finger', chordPlay: 'both', lefty: false, showFretboard: true, key: 'A', tuning: 'standard', a4: 440 };
 
 function load(): Settings {
   try {
@@ -31,6 +34,8 @@ function load(): Settings {
       lefty: typeof parsed.lefty === 'boolean' ? parsed.lefty : DEFAULTS.lefty,
       showFretboard: typeof parsed.showFretboard === 'boolean' ? parsed.showFretboard : DEFAULTS.showFretboard,
       key: normalizeKey(parsed.key) ?? DEFAULTS.key,
+      tuning: typeof parsed.tuning === 'string' ? parsed.tuning : DEFAULTS.tuning,
+      a4: typeof parsed.a4 === 'number' && parsed.a4 >= 400 && parsed.a4 <= 480 ? parsed.a4 : DEFAULTS.a4,
     };
   } catch {
     return { ...DEFAULTS };
