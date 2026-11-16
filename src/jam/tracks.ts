@@ -1,4 +1,6 @@
 import type { SongKey } from '../theory/chordScale';
+import { parseChart } from './chart';
+import type { LocalMeta } from './localTracks';
 import type { Progression, Timeline } from './timeline';
 
 /**
@@ -19,9 +21,10 @@ export interface License {
 export const CC_BY_3: License = { name: 'CC BY 3.0', url: 'https://creativecommons.org/licenses/by/3.0/' };
 export const CC0: License = { name: 'CC0 1.0', url: 'https://creativecommons.org/publicdomain/zero/1.0/' };
 
-export type TrackStyle = 'blues' | 'slow-blues' | 'funk' | 'rock' | 'metal' | 'ballad';
+export type TrackStyle = 'yours' | 'blues' | 'slow-blues' | 'funk' | 'rock' | 'metal' | 'ballad';
 
 export const STYLE_LABELS: Record<TrackStyle, string> = {
+  yours: 'Your tracks',
   blues: 'Blues',
   'slow-blues': 'Slow blues',
   funk: 'Funk and R&B',
@@ -32,6 +35,10 @@ export const STYLE_LABELS: Record<TrackStyle, string> = {
 
 export interface Track {
   id: string;
+  /** A file from your own device: it plays from here and is never uploaded. */
+  local?: boolean;
+  /** Where to load the audio from, when it is not a bundled file (e.g. a local file's object URL). */
+  src?: string;
   /** Where to support the artist (e.g. their store). */
   support?: string;
   /** The song's key, for choosing a scale per chord. */
@@ -151,8 +158,41 @@ export function trackById(id: string | undefined): Track {
   return TRACKS.find((t) => t.id === id) ?? TRACKS[0];
 }
 
+/** Scales to try for a key: the safe choices first. */
+export function scalesForKey(minor: boolean): string[] {
+  // Major keys also get minor pentatonic and blues: blues tracks usually read as major.
+  return minor ? ['minor-pentatonic', 'natural-minor', 'dorian', 'blues'] : ['major-pentatonic', 'major', 'mixolydian', 'minor-pentatonic', 'blues'];
+}
+
+/** Turns one of your saved files into a track the player and fretboard understand. */
+export function localToTrack(m: LocalMeta, src: string): Track {
+  const chart = m.chart.trim() ? parseChart(m.chart).progression : undefined;
+  return {
+    id: m.id,
+    local: true,
+    src,
+    title: m.title,
+    artist: 'you',
+    source: '',
+    license: { name: 'Your file', url: '' },
+    changes: '',
+    file: '',
+    style: 'yours',
+    root: m.root,
+    keyLabel: `${m.root} ${m.minor ? 'minor' : 'major'}`,
+    key: { root: m.root, minor: m.minor },
+    bpm: m.bpm,
+    feel: 'straight',
+    durationSec: m.durationSec,
+    scales: scalesForKey(m.minor),
+    progression: chart && chart.sections.length ? chart : undefined,
+    estimated: { key: m.keyEstimated, tempo: m.bpmEstimated && m.bpm !== null },
+  };
+}
+
 /** Credit line in the form the licenses ask for. */
 export function creditText(t: Track): string {
+  if (t.local) return `Your file, playing only on this device`;
   return `"${t.title}" by ${t.artist}, ${t.license.name}, ${t.changes}`;
 }
 

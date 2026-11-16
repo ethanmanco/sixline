@@ -19,7 +19,11 @@ import {
   type ChartChord,
   type Timeline,
 } from './timeline';
-import { STYLE_LABELS, TRACKS, creditText, formatTime, songKey, trackById, type Track, type TrackStyle } from './tracks';
+import { analyzeFile } from './analyzeFile';
+import { chartToText, parseChart } from './chart';
+import { fileId, getBlob, listLocal, removeLocal, saveLocal, updateLocal, type LocalMeta } from './localTracks';
+import { KEYS, keyOptionLabel } from '../theory/keys';
+import { STYLE_LABELS, TRACKS, creditText, formatTime, localToTrack, songKey, type Track, type TrackStyle } from './tracks';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const SPEEDS = [1, 0.9, 0.8, 0.75, 0.7, 0.6, 0.5];
@@ -52,6 +56,12 @@ export class JamView {
   private nextTap: number | null = null;
   private raf = 0;
   private seeking = false;
+  /** Your saved tracks (metadata), and object URLs for the ones played this visit. */
+  private locals: LocalMeta[] = [];
+  private urls = new Map<string, string>();
+  private localsLoaded: Promise<void>;
+  private lastRoute: Route | null = null;
+  private busy = '';
 
   constructor(private stage: Stage) {
     this.top = document.createElement('section');
@@ -117,6 +127,10 @@ export class JamView {
     this.player.setVolume(0.9);
     this.player.subscribe((s) => this.onState(s));
 
+    this.localsLoaded = listLocal().then((l) => {
+      this.locals = l;
+    });
+
     // Tap along: T steps the chord timeline when the tap tool is open.
     document.addEventListener('keydown', (e) => {
       if (e.key.toLowerCase() !== 't' || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -133,10 +147,90 @@ export class JamView {
     this.player.pause();
   }
 
-  render(route: Route): void {
-    const next = trackById(route.category);
+  async render(route: Route): Promise<void> {
+    this.lastRoute = route;
+    const id = route.category;
+    if (id?.startsWith('local-')) await this.localsLoaded;
+    const next = (await this.findTrack(id)) ?? TRACKS[0];
+    if (this.lastRoute !== route) return;
     const first = !this.top.querySelector('.jt__title')!.textContent;
-    if (next.id !== this.track.id || first) this.selectTrack(next);
+    if (next.id !== this.track.id || first || next.local) this.selectTrack(next);
+    this.renderLibrary();
+    this.showFretboard();
+  }
+
+  /** A bundled track, or one of your files (made playable from browser storage). */
+  private async findTrack(id: string | undefined): Promise<Track | null> {
+    const builtIn = TRACKS.find((t) => t.id === id);
+    if (builtIn) return builtIn;
+    const meta = this.locals.find((m) => m.id === id);
+    if (!meta) return null;
+    let url = this.urls.get(meta.id);
+    if (!url) {
+      const blob = await getBlob(meta.id);
+      if (!blob) return null;
+      url = URL.createObjectURL(blob);
+      this.urls.set(meta.id, url);
+    }
+    return localToTrack(meta, url);
+  }
+
+  /** Adds files from your device: analyzes each one, saves it in this browser, and opens the first. */
+  private async addFiles(files: FileList | File[]): Promise<void> {
+    let firstId = '';
+    for (const file of Array.from(files)) {
+      const id = fileId(file);
+      firstId ||= id;
+      if (this.locals.some((m) => m.id === id)) continue;
+      this.setBusy(`Listening to ${file.name} for its key and tempo. It stays on your device.`);
+      try {
+        const { analysis, durationSec } = await analyzeFile(file);
+        const [best, ...rest] = analysis.keys;
+        const meta: LocalMeta = {
+          id,
+          title: file.name.replace(/\.[a-z0-9]{2,4}$/i, ''),
+          fileName: file.name,
+          size: file.size,
+          durationSec,
+          root: best.root,
+          minor: best.minor,
+          alternatives: rest.map((k) => ({ root: k.root, minor: k.minor })),
+          keyEstimated: true,
+          bpm: analysis.bpm,
+          bpmEstimated: true,
+          chart: '',
+          added: Date.now(),
+        };
+        const stored = await saveLocal(meta, file);
+        this.locals = await listLocal();
+        this.setBusy(stored ? '' : 'Your browser would not save this file, so it will be gone after you close the page.');
+      } catch {
+        this.setBusy(`${file.name} could not be read as audio. Try an MP3, M4A, WAV, or OGG file.`);
+        firstId = firstId === id ? '' : firstId;
+      }
+    }
+    if (firstId && this.locals.some((m) => m.id === firstId)) location.hash = href(['jam', firstId]);
+    else this.renderLibrary();
+  }
+
+  private setBusy(text: string): void {
+    this.busy = text;
+    const el = this.bottom.querySelector('[data-mine-status]');
+    if (el) el.textContent = text;
+  }
+
+  private async saveMeta(patch: Partial<LocalMeta>): Promise<void> {
+    await updateLocal(this.track.id, patch);
+    this.locals = await listLocal();
+    const meta = this.locals.find((m) => m.id === this.track.id);
+    if (!meta) return;
+    const keepScale = this.scaleId;
+    this.track = localToTrack(meta, this.urls.get(meta.id) ?? '');
+    if (!this.track.scales.includes(keepScale)) this.scaleId = this.track.scales[0];
+    this.chart = this.track.progression ? flatten(this.track.progression) : [];
+    if (this.current >= this.chart.length) this.current = this.chart.length ? 0 : -1;
+    if (!this.chart.length) this.mode = 'key';
+    this.renderTrack();
     this.renderLibrary();
     this.showFretboard();
   }
@@ -157,7 +251,7 @@ export class JamView {
     this.nextTap = null;
     this.mode = this.chart.length ? 'chords' : 'key';
 
-    this.player.load(`${import.meta.env.BASE_URL}jam/${next.file}`);
+    this.player.load(next.src ?? `${import.meta.env.BASE_URL}jam/${next.file}`);
     this.player.setSpeed(Number(this.top.querySelector<HTMLSelectElement>('[data-jt-speed]')!.value));
     if (wasPlaying) this.player.play().catch(() => undefined);
     this.renderTrack();
@@ -207,23 +301,26 @@ export class JamView {
     const t = this.track;
     this.top.querySelector('.jt__title')!.textContent = t.title;
     this.updateMeta();
-    const links = [
-      `<a href="${t.source}" target="_blank" rel="noopener">Original</a>`,
-      `<a href="${t.license.url}" target="_blank" rel="noopener">License</a>`,
-    ];
+    const links = t.local
+      ? []
+      : [`<a href="${t.source}" target="_blank" rel="noopener">Original</a>`, `<a href="${t.license.url}" target="_blank" rel="noopener">License</a>`];
     if (t.support) links.push(`<a href="${t.support}" target="_blank" rel="noopener">Support the artist</a>`);
-    this.top.querySelector('[data-jt-credit]')!.innerHTML = `${esc(creditText(t))}. ${links.join(' · ')}`;
+    this.top.querySelector('[data-jt-credit]')!.innerHTML = `${esc(creditText(t))}.${links.length ? ` ${links.join(' · ')}` : ''}`;
     const est = this.top.querySelector<HTMLElement>('[data-jt-estimate]')!;
     const parts = [t.estimated?.key ? 'key' : '', t.estimated?.tempo ? 'tempo' : ''].filter(Boolean);
     est.hidden = parts.length === 0;
-    est.textContent = parts.length ? `The ${parts.join(' and ')} here ${parts.length > 1 ? 'were' : 'was'} estimated from the audio, since the track's page does not say.` : '';
+    est.textContent = !parts.length
+      ? ''
+      : t.local
+        ? `The ${parts.join(' and ')} ${parts.length > 1 ? 'were' : 'was'} estimated from the audio. Fix ${parts.length > 1 ? 'them' : 'it'} below if ${parts.length > 1 ? 'they sound' : 'it sounds'} off.`
+        : `The ${parts.join(' and ')} here ${parts.length > 1 ? 'were' : 'was'} estimated from the audio, since the track's page does not say.`;
   }
 
   private updateMeta(): void {
     const t = this.track;
     const speed = Number(this.top.querySelector<HTMLSelectElement>('[data-jt-speed]')!.value);
     const bpm = t.bpm ? `${Math.round(t.bpm * speed)} BPM${speed !== 1 ? ` (${t.bpm} at full speed)` : ''}` : 'tempo not stated';
-    const bits = [STYLE_LABELS[t.style], `key of ${t.keyLabel}`, bpm, t.feel === 'shuffle' ? 'shuffle feel' : '', `by ${t.artist}`].filter(Boolean);
+    const bits = [t.local ? 'Your track' : STYLE_LABELS[t.style], `key of ${t.keyLabel}`, bpm, t.feel === 'shuffle' ? 'shuffle feel' : '', t.local ? '' : `by ${t.artist}`].filter(Boolean);
     this.top.querySelector('.jt__meta')!.textContent = bits.join(', ');
   }
 
@@ -395,7 +492,50 @@ export class JamView {
         </details>`
       : `<p class="sync__none">This track has no chord chart yet, so it uses scales for the whole key.</p>`;
 
+    const mineList = this.locals
+      .map(
+        (m) => `<li><a class="track" href="${href(['jam', m.id])}" ${m.id === t.id ? 'aria-current="true"' : ''}>
+          <span class="track__title">${esc(m.title)}</span>
+          <span class="track__meta">Key of ${esc(`${m.root} ${m.minor ? 'minor' : 'major'}`)}${m.keyEstimated ? ' (est.)' : ''}${m.bpm ? `, ${m.bpm} BPM` : ''}, ${formatTime(m.durationSec)}${m.chart.trim() ? ', chord chart' : ''}</span>
+        </a></li>`,
+      )
+      .join('');
+    const meta = t.local ? this.locals.find((m) => m.id === t.id) : undefined;
+    const keyOpts = KEYS.map((k) => `<option value="${k}" ${meta?.root === k ? 'selected' : ''}>${keyOptionLabel(k)}</option>`).join('');
+    const details = meta
+      ? `<section class="mine-details" aria-labelledby="mine-title">
+          <h2 class="sync__title" id="mine-title">Track details</h2>
+          <div class="mine-row">
+            <label class="jt__opt">Key <select data-mine="root">${keyOpts}</select></label>
+            <label class="jt__opt"><select data-mine="minor"><option value="0" ${!meta.minor ? 'selected' : ''}>major</option><option value="1" ${meta.minor ? 'selected' : ''}>minor</option></select></label>
+            <label class="jt__opt">Tempo <input type="number" min="30" max="260" step="1" inputmode="numeric" value="${meta.bpm ?? ''}" data-mine="bpm" aria-label="Tempo in beats per minute" /> BPM</label>
+          </div>
+          ${
+            meta.keyEstimated && meta.alternatives.length
+              ? `<p class="mine-alt">Sounds off? Other likely keys: ${meta.alternatives
+                  .map((a) => `<button type="button" class="pick" data-mine-key="${a.root}|${a.minor ? 1 : 0}">${esc(`${a.root} ${a.minor ? 'minor' : 'major'}`)}</button>`)
+                  .join(' ')}</p>`
+              : ''
+          }
+          <label class="mine-chart-label" for="mine-chart">Chord chart (optional). Paste it the way you'd write it, one section per line, like <code>A: Am7 D7 Gmaj7</code> or <code>Emaj7-C#7b9-Amaj7</code>.</label>
+          <textarea id="mine-chart" rows="4" data-mine="chart" spellcheck="false">${esc(meta.chart)}</textarea>
+          <div class="sync__controls">
+            <button type="button" class="btn" data-mine-act="chart">Save chart</button>
+            <button type="button" class="btn" data-mine-act="remove">Remove this track</button>
+            <span class="sync__note" data-mine-note></span>
+          </div>
+        </section>`
+      : '';
+
     this.bottom.innerHTML = `
+      <section class="jam-mine" aria-labelledby="mine-lib-title">
+        <h2 class="jam-library__title" id="mine-lib-title">Your tracks</h2>
+        <p class="jam-library__intro">Play any backing track you have on this device. It stays on your device: nothing is uploaded. Sixline listens for the key and tempo, and you can add the chords.</p>
+        <label class="btn btn--play mine-add">Add a track from this device<input type="file" accept="audio/*" multiple data-mine-file hidden /></label>
+        <p class="sync__status" data-mine-status role="status">${esc(this.busy)}</p>
+        ${mineList ? `<ul class="tracks" role="list">${mineList}</ul>` : ''}
+      </section>
+      ${details}
       <section class="jam-sync-wrap" aria-label="Chord timing">${sync}</section>
       <section class="jam-library" aria-labelledby="jam-lib-title">
         <h2 class="jam-library__title" id="jam-lib-title">Backing tracks</h2>
@@ -461,7 +601,73 @@ export class JamView {
         }
       }
     });
+    this.bindMine();
     this.renderSyncStatus();
+  }
+
+  private bindMine(): void {
+    const file = this.bottom.querySelector<HTMLInputElement>('[data-mine-file]');
+    file?.addEventListener('change', () => {
+      if (file.files?.length) void this.addFiles(file.files);
+    });
+    const mine = this.bottom.querySelector<HTMLElement>('.jam-mine');
+    mine?.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      mine.classList.add('is-drop');
+    });
+    mine?.addEventListener('dragleave', () => mine.classList.remove('is-drop'));
+    mine?.addEventListener('drop', (e) => {
+      e.preventDefault();
+      mine.classList.remove('is-drop');
+      const files = Array.from(e.dataTransfer?.files ?? []).filter((f) => f.type.startsWith('audio/') || /\.(mp3|m4a|wav|ogg|aac|flac)$/i.test(f.name));
+      if (files.length) void this.addFiles(files);
+    });
+
+    const box = this.bottom.querySelector<HTMLElement>('.mine-details');
+    if (!box) return;
+    const note = (text: string) => {
+      const el = box.querySelector('[data-mine-note]');
+      if (el) el.textContent = text;
+    };
+    box.querySelector<HTMLSelectElement>('[data-mine="root"]')!.addEventListener('change', (e) =>
+      void this.saveMeta({ root: (e.target as HTMLSelectElement).value, keyEstimated: false }),
+    );
+    box.querySelector<HTMLSelectElement>('[data-mine="minor"]')!.addEventListener('change', (e) =>
+      void this.saveMeta({ minor: (e.target as HTMLSelectElement).value === '1', keyEstimated: false }),
+    );
+    box.querySelector<HTMLInputElement>('[data-mine="bpm"]')!.addEventListener('change', (e) => {
+      const v = Math.round(Number((e.target as HTMLInputElement).value));
+      void this.saveMeta({ bpm: v >= 30 && v <= 260 ? v : null, bpmEstimated: false });
+    });
+    box.addEventListener('click', (e) => {
+      const el = (e.target as HTMLElement).closest<HTMLButtonElement>('button');
+      if (!el) return;
+      if (el.dataset.mineKey) {
+        const [root, minor] = el.dataset.mineKey.split('|');
+        void this.saveMeta({ root, minor: minor === '1', keyEstimated: false });
+      } else if (el.dataset.mineAct === 'chart') {
+        const text = box.querySelector<HTMLTextAreaElement>('[data-mine="chart"]')!.value;
+        const { progression, unknown } = parseChart(text);
+        const count = progression.sections.reduce((n, s) => n + s.chords.length, 0);
+        void this.saveMeta({ chart: progression.sections.length ? chartToText(progression) : '' }).then(() => {
+          const msg = count ? `Saved ${count} chord${count === 1 ? '' : 's'} in ${progression.sections.length} section${progression.sections.length === 1 ? '' : 's'}.` : text.trim() ? 'No chords found.' : 'Chart cleared.';
+          const el2 = this.bottom.querySelector('[data-mine-note]');
+          if (el2) el2.textContent = unknown.length ? `${msg} Not chords, so left out: ${unknown.slice(0, 6).join(', ')}.` : msg;
+        });
+      } else if (el.dataset.mineAct === 'remove') {
+        if (!window.confirm(`Remove "${this.track.title}" from Sixline on this device? The file on your device is not touched.`)) return;
+        const id = this.track.id;
+        void removeLocal(id).then(async () => {
+          const url = this.urls.get(id);
+          if (url) URL.revokeObjectURL(url);
+          this.urls.delete(id);
+          saveTimeline(id, null);
+          this.locals = await listLocal();
+          location.hash = href(['jam']);
+        });
+      }
+      note('');
+    });
   }
 
   /** Marks "the next chord starts now". */

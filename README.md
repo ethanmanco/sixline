@@ -38,6 +38,16 @@ Every item comes with its notes, intervals, a fingering, a tab preview, and a sh
 
 ![C major, A-shape barre in the dark theme, with the barre drawn across fret 3 and the muted low E string marked](docs/learn-chords.png)
 
+## Jam (in progress)
+
+Play along with a backing track while the fretboard shows what to play.
+
+- **Built-in tracks:** five backing tracks by Admiral Bob, recorded by a real band, with the original lead guitar left out.
+- **Your tracks:** load any backing track from your device. It plays only in your browser and is never uploaded. Sixline estimates the key and tempo from the audio, and you can correct them.
+- **Scales for the key, or follow the chords:** paste a chord chart and Sixline picks the best scale for each chord as it plays (for example, Phrygian dominant over a 7b9 chord, melodic minor over a minor 6), and rings that chord's notes on the neck. Notes a scale is missing show as hollow dots.
+- **Tap to sync:** tap along with the track once to mark when each chord starts, and the fretboard follows the music from then on.
+- **Practice tools:** slow down to 50% without changing pitch, loop, and volume.
+
 ## The fretboard
 
 - Six strings in standard tuning, frets 0 to 15. Horizontal on wide screens, and vertical like a chord chart on a phone held upright.
@@ -121,6 +131,7 @@ src/
 - **Guitar sound:** steel-string acoustic guitar notes from the FluidR3_GM rendering in [midi-js-soundfonts](https://github.com/gleitz/midi-js-soundfonts) by Benjamin Gleitzman. That project releases the FluidR3_GM rendering under [Creative Commons Attribution 3.0](https://creativecommons.org/licenses/by/3.0/). The original Fluid (R3) General MIDI SoundFont is Copyright (c) 2000-2002, 2008 Frank Wen and released under the MIT License. The 40 note files are unmodified; full credits are in [public/samples/guitar/CREDITS.txt](public/samples/guitar/CREDITS.txt).
 - **Music theory:** [tonal](https://github.com/tonaljs/tonal), MIT License, Copyright (c) 2015 danigb.
 - **Audio engine:** [Tone.js](https://github.com/Tonejs/Tone.js), MIT License, Copyright (c) 2014-2020 Yotam Mann.
+- **Jam backing tracks:** by [Admiral Bob](https://ccmixter.org/people/admiralbob77) on ccMixter, under [Creative Commons Attribution 3.0](https://creativecommons.org/licenses/by/3.0/). The lead guitar parts were left out and levels were matched; every file and its source is listed in [public/jam/CREDITS.md](public/jam/CREDITS.md).
 - **Fonts:** Fraunces, IBM Plex Sans, and IBM Plex Mono from Google Fonts, under the SIL Open Font License.
 
 All descriptions, diagrams, and fingerings are written or generated for Sixline. No text, diagrams, or lessons were copied from other websites.

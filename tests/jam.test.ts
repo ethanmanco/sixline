@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { TRACKS, creditText, formatTime, songKey } from '../src/jam/tracks';
+import { TRACKS, creditText, formatTime, localToTrack, songKey } from '../src/jam/tracks';
+import { fileId } from '../src/jam/localTracks';
 import { chordChromas, chordScaleFor } from '../src/theory/chordScale';
 import { chromaOfName } from './helpers';
 import { buildScaleShapes } from '../src/shapes/scaleShapes';
@@ -48,4 +49,38 @@ describe('formatTime', () => {
     [61, '1:01'],
     [283, '4:43'],
   ])('%d seconds reads %s', (s, text) => expect(formatTime(s)).toBe(text));
+});
+
+describe('your tracks', () => {
+  const meta = {
+    id: 'local-abc',
+    title: 'My jam',
+    fileName: 'My jam.mp3',
+    size: 1,
+    durationSec: 200,
+    root: 'E',
+    minor: false,
+    alternatives: [],
+    keyEstimated: true,
+    bpm: 96,
+    bpmEstimated: true,
+    chart: 'A: Emaj7 C#7b9 Amaj7 Am6',
+    added: 0,
+  };
+
+  it('become playable tracks with the key, scales, and chart', () => {
+    const t = localToTrack(meta, 'blob:x');
+    expect(t).toMatchObject({ id: 'local-abc', local: true, src: 'blob:x', root: 'E', keyLabel: 'E major', bpm: 96 });
+    expect(t.progression?.sections[0].chords).toEqual(['Emaj7', 'C#7b9', 'Amaj7', 'Am6']);
+    expect(t.scales).toContain('major');
+    expect(localToTrack({ ...meta, minor: true }, '').scales[0]).toBe('minor-pentatonic');
+    expect(localToTrack({ ...meta, chart: '' }, '').progression).toBeUndefined();
+  });
+
+  it('get the same id for the same file', () => {
+    const f = { name: 'a.mp3', size: 10, lastModified: 5 };
+    expect(fileId(f)).toBe(fileId({ ...f }));
+    expect(fileId(f)).not.toBe(fileId({ ...f, size: 11 }));
+    expect(fileId(f)).toMatch(/^local-/);
+  });
 });

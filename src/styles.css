@@ -1466,3 +1466,79 @@ kbd {
     overflow-x: auto;
   }
 }
+
+/* ---------- Jam: your tracks ---------- */
+
+.jam-mine {
+  background: var(--card);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 14px 18px 16px;
+  display: grid;
+  gap: 8px;
+}
+.jam-mine.is-drop {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.mine-add {
+  justify-self: start;
+  cursor: pointer;
+}
+.mine-add:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.mine-details {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 18px 16px;
+  display: grid;
+  gap: 10px;
+}
+.mine-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+}
+.mine-row input[type='number'] {
+  width: 70px;
+  font: 600 14px/1 var(--font-ui);
+  color: var(--ink);
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.mine-alt {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.mine-alt .pick {
+  background: transparent;
+  cursor: pointer;
+}
+.mine-chart-label {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.mine-details textarea {
+  width: 100%;
+  font: 500 14px/1.5 var(--font-mono);
+  color: var(--ink);
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+.sync__status:empty {
+  display: none;
+}
